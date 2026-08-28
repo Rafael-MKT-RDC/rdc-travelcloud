@@ -12,6 +12,19 @@ var lista = [], editando = null, rascunho = null;
    No site publicado tudo vive no servidor: todo mundo que entra vê a mesma
    lista. Sem servidor (pacote de visualização) cai no navegador. */
 var TEM_API = !window.TC_INLINE;
+/* endereco do site: o link de cada cliente e sempre SITE + '/' + apelido */
+var SITE = (location.protocol === 'https:' || location.protocol === 'http:')
+             ? location.origin : 'https://rdc-travelcloud.vercel.app';
+function linkDe(p){ return SITE + '/' + (p && p.slug ? p.slug : ''); }
+function copiaAntiga(txt, feito){
+  try{
+    var t = document.createElement('textarea');
+    t.value = txt; t.setAttribute('readonly','');
+    t.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(t); t.select(); t.setSelectionRange(0, 99999);
+    document.execCommand('copy'); t.remove(); feito();
+  }catch(e){ window.prompt('Copie o link:', txt); }
+}
 var emailsAcesso = [];
 var sessao = { token:'', email:'' };
 try{
@@ -211,60 +224,6 @@ function atualizarPrevia(){
   }, 220);
 }
 
-/* ---------- arquivo do cliente ---------- */
-function arquivoCliente(cfg){
-  var tons = derivar(cfg.cores.brand);
-  var c = ['  cliente : '+JSON.stringify(cfg.cliente),
-           '  rotulo  : '+JSON.stringify(cfg.rotulo),
-           '  logo    : '+(cfg.logo? JSON.stringify(cfg.logo) : 'null'),
-           '  prime   : '+(cfg.prime!==false)];
-  var cores = ['    brand : '+JSON.stringify(cfg.cores.brand)];
-  if(cfg.manual){
-    cores.push('    brandDark : '+JSON.stringify(cfg.cores.brandDark || tons.dark));
-    cores.push('    brandLight: '+JSON.stringify(cfg.cores.brandLight || tons.light));
-    cores.push('    brandInk  : '+JSON.stringify(cfg.cores.brandInk || tons.ink));
-  }
-  var ap = cfg.appProprio||{};
-  var app = ap.ativo
-    ? '  appProprio: {\n    ativo   : true,\n    imagem  : '+JSON.stringify(ap.imagem||'')+',\n    hotspot : '+
-      JSON.stringify(ap.hotspot)+'\n  }'
-    : '  appProprio: { ativo: false }';
-  return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'+
-  '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'+
-  '<meta name="theme-color" content="'+cfg.cores.brand+'">\n'+
-  '<title>'+esc(cfg.cliente)+' · '+esc(cfg.rotulo)+'</title>\n'+
-  '<link rel="preconnect" href="https://fonts.googleapis.com">\n'+
-  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
-  '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n'+
-  '<link rel="stylesheet" href="/assets/tc.css?v=6">\n</head>\n<body>\n'+
-  '<div class="phone"><div class="vp" id="vp"></div></div>\n\n'+
-  '<!-- bloco gerado pelo editor -->\n<script>\nwindow.TC = {\n'+
-  c.join(',\n')+',\n\n  cores: {\n'+cores.join(',\n')+'\n  },\n\n'+app+'\n};\n</'+'script>\n\n'+
-  '<script src="/assets/tc.js?v=6"></'+'script>\n</body>\n</html>\n';
-}
-function baixarDireto(nome, txt){
-  try{
-    var b = new Blob([txt], {type:'text/html;charset=utf-8'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(b); a.download = nome;
-    document.body.appendChild(a); a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-    return true;
-  }catch(e){ return false; }
-}
-// Publicado como Artifact o download passa pela permissão do visualizador;
-// no site em Vercel/arquivo local vai direto pelo navegador.
-function salvarArquivo(nome, txt, feito){
-  function direto(){ feito(baixarDireto(nome, txt) ? 'direto' : 'falhou'); }
-  if(window.claude && typeof window.claude.use === 'function'){
-    window.claude.use('downloads').then(function(d){
-      if(!d) return direto();
-      d.save({filename:nome, data:txt}).then(
-        function(){ feito('salvo'); },
-        function(e){ feito(e && e.code==='declined' ? 'recusado' : 'falhou'); });
-    }, direto);
-  } else direto();
-}
 
 /* ============================================================
    TELA 0 — ENTRAR
@@ -372,21 +331,20 @@ function verGaleria(){
           (p.prime!==false ? '<span class="selo ok">Prime</span>' : '<span class="selo">Sem Prime</span>')+
           (p.appProprio && p.appProprio.ativo ? '<span class="selo">App próprio</span>' : '')+
           (p.logo ? '' : '<span class="selo">Sem logo</span>')+
-          (p.publicado ? '<span class="selo ar">No ar</span>' : '')+
+          '<span class="selo ar">No ar</span>'+
         '</div></div>'+
       '<div class="acoes">'+
-        (p.publicado ? '<a class="b mini" href="/'+esc(p.slug)+'/" target="_blank" rel="noopener">Abrir</a>'
-                     : '<button class="b mini" data-abrir="'+i+'">Prévia</button>')+
+        '<a class="b mini" href="'+esc(linkDe(p))+'" target="_blank" rel="noopener">Abrir link</a>'+
+        '<button class="b mini" data-link="'+i+'">Copiar link</button>'+
         '<button class="b mini" data-editar="'+i+'">Editar</button>'+
-        '<button class="b mini" data-copiar="'+i+'">Duplicar</button>'+
         '<button class="b mini perigo" data-excluir="'+i+'">Excluir</button>'+
       '</div></div>';
   }).join('') : '';
 
   app.innerHTML =
    '<div class="topo"><div><h1>Protótipos por cliente</h1>'+
-     '<p class="sub">Cada protótipo vira um link com a marca do cliente. Crie um novo, ajuste a qualquer momento '+
-     'e gere o arquivo para publicar.</p></div>'+
+     '<p class="sub">Cada protótipo vira um link com a marca do cliente. Salvou, está no ar — '+
+     'é só copiar o link e apresentar.</p></div>'+
      '<div class="rodape-acoes">'+
        (TEM_API ? '<button class="b" id="btEmails">Quem pode entrar</button>'+
                   '<button class="b" id="btSair">Sair</button>' : '')+
@@ -405,14 +363,16 @@ function verGaleria(){
   app.querySelectorAll('[data-editar]').forEach(function(b){
     b.onclick = function(){ var i=+b.dataset.editar; verEditor(JSON.parse(JSON.stringify(lista[i])), i); };
   });
-  app.querySelectorAll('[data-abrir]').forEach(function(b){
-    b.onclick = function(){ abrirPrevia(lista[+b.dataset.abrir]); };
-  });
-  app.querySelectorAll('[data-copiar]').forEach(function(b){
+  app.querySelectorAll('[data-link]').forEach(function(b){
     b.onclick = function(){
-      var c = JSON.parse(JSON.stringify(lista[+b.dataset.copiar]));
-      c.cliente += ' (cópia)'; c.slug = apelido(c.cliente);
-      lista.push(c); gravar().then(verGaleria, verGaleria);
+      var url = linkDe(lista[+b.dataset.link]);
+      function pronto(){
+        var antes = b.textContent; b.textContent = 'Link copiado';
+        setTimeout(function(){ if(b.isConnected) b.textContent = antes; }, 1800);
+      }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(pronto, function(){ copiaAntiga(url, pronto); });
+      } else copiaAntiga(url, pronto);
     };
   });
   app.querySelectorAll('[data-excluir]').forEach(function(b){
@@ -423,18 +383,6 @@ function verGaleria(){
       setTimeout(function(){ if(b.isConnected){ delete b.dataset.confirmando; b.textContent='Excluir'; } }, 4000);
     };
   });
-}
-
-function abrirPrevia(cfg){
-  var d = document.createElement('div');
-  d.style.cssText='position:fixed;inset:0;z-index:99;background:rgba(10,14,22,.72);display:flex;'+
-    'align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:14px';
-  d.innerHTML = '<iframe style="width:392px;max-width:100%;height:min(812px,84vh);border:0;border-radius:30px;background:#fff"></iframe>'+
-    '<button class="b" style="background:#fff;color:#171B21">Fechar</button>';
-  d.querySelector('iframe').srcdoc = montarDoc(cfg);
-  d.querySelector('button').onclick = function(){ d.remove(); };
-  d.onclick = function(e){ if(e.target===d) d.remove(); };
-  document.body.appendChild(d);
 }
 
 /* ============================================================
@@ -458,7 +406,7 @@ function verEditor(cfg, idx){
         '<input type="text" id="fNome" value="'+esc(cfg.cliente)+'" placeholder="BRB"></div>'+
       '<div class="campo2"><label>Link</label>'+
         '<input type="text" id="fSlug" value="'+esc(cfg.slug)+'" placeholder="brb">'+
-        '<div class="ajuda">Fica <code>seusite.com/<span id="vSlug">'+esc(cfg.slug||'cliente')+'</span></code></div></div>'+
+        '<div class="ajuda">Fica <code>'+esc(SITE)+'/<span id="vSlug">'+esc(cfg.slug||'cliente')+'</span></code></div></div>'+
     '</div></div>'+
 
   '<div class="bloco"><h2>Marca</h2>'+
@@ -520,12 +468,11 @@ function verEditor(cfg, idx){
     '</div></div>'+
 
   '<div class="bloco"><h2>Publicar</h2>'+
-    '<p class="dica">Salve para guardar na galeria. Gere o arquivo para levar o cliente ao ar em '+
-      '<code>seusite.com/<span id="vSlug2">'+esc(cfg.slug||'cliente')+'</span></code>.</p>'+
+    '<p class="dica">É só salvar: o link entra no ar na hora, em '+
+      '<code>'+esc(SITE)+'/<span id="vSlug2">'+esc(cfg.slug||'cliente')+'</span></code>.</p>'+
     '<div class="rodape-acoes">'+
       '<button class="b forte" id="btSalvar">Salvar protótipo</button>'+
-      '<button class="b" id="btArquivo">Gerar index.html</button>'+
-      '<button class="b" id="btCopiar">Copiar código</button>'+
+      (idx===null?'':'<button class="b" id="btVerLink">Abrir link</button>')+
       (idx===null?'':'<button class="b perigo" id="btApagar">Excluir</button>')+
     '</div>'+
     '<div id="recado2" class="recado info esconde"></div></div>'+
@@ -692,24 +639,8 @@ function ligarEditor(){
     aviso2('Salvando…','info');
     gravar().then(verGaleria, function(){ aviso2('Não consegui salvar. Confira a conexão e tente de novo.','ruim'); });
   };
-  $('btArquivo').onclick = function(){
-    var pasta = rascunho.slug || 'cliente';
-    aviso2('Preparando o arquivo…','info');
-    salvarArquivo(pasta+'-index.html', arquivoCliente(rascunho), function(r){
-      if(r==='salvo' || r==='direto')
-        aviso2('Arquivo pronto. Crie a pasta <code>'+esc(pasta)+'/</code> dentro de <code>travelcloud/</code> e '+
-               'renomeie para <code>index.html</code>. O logo já vai embutido — é um arquivo só.','bom');
-      else if(r==='recusado') aviso2('Download cancelado.','info');
-      else aviso2('Não consegui entregar o arquivo aqui. Use <b>Copiar código</b> e cole num <code>index.html</code>.','ruim');
-    });
-  };
-  $('btCopiar').onclick = function(){
-    var txt = arquivoCliente(rascunho);
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(txt).then(
-        function(){ aviso2('Código copiado. Cole num arquivo <code>index.html</code> dentro da pasta do cliente.','bom'); },
-        function(){ mostrarCodigo(txt); });
-    } else mostrarCodigo(txt);
+  if($('btVerLink')) $('btVerLink').onclick = function(){
+    window.open(linkDe(rascunho), '_blank', 'noopener');
   };
   if($('btApagar')) $('btApagar').onclick = function(){
     if(this.dataset.c){ lista.splice(editando,1); gravar().then(verGaleria, verGaleria); return; }
@@ -720,12 +651,6 @@ function ligarEditor(){
 
   function aviso2(txt,tipo){
     var el=$('recado2'); el.className='recado '+(tipo||'info'); el.innerHTML=txt; el.classList.remove('esconde');
-  }
-  function mostrarCodigo(txt){
-    var ta=document.createElement('textarea');
-    ta.value=txt; ta.style.cssText='width:100%;height:180px;margin-top:12px;font-size:11px;border-radius:8px';
-    $('recado2').className='recado info'; $('recado2').textContent='Selecione tudo e copie:';
-    $('recado2').classList.remove('esconde'); $('recado2').appendChild(ta); ta.select();
   }
 }
 

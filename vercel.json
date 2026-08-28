@@ -5,11 +5,27 @@
   "headers": [
     {
       "source": "/assets/(.*)",
-      "headers": [{ "key": "cache-control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/api/(.*)",
-      "headers": [{ "key": "access-control-allow-origin", "value": "*" }]
+      "headers": [
+        {
+          "key": "access-control-allow-origin",
+          "value": "*"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/:slug",
+      "destination": "/api/pagina?slug=:slug"
     }
   ]
 }
