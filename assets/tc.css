@@ -545,7 +545,9 @@ a,button,label,select,input,.opt,.tab,.card,.dest,.chip{touch-action:manipulatio
   justify-content:center;color:var(--brand);background:color-mix(in srgb,var(--brand) 11%,#fff)}
 .fim-ico.plano{background:none;width:auto;height:auto;margin-bottom:12px;display:block}
 .fim-eco{font-size:13px}
-.status.espera{background:#FBEEDB;color:#8A5A16}
+/* em processamento não é alerta: verde de aprovado, texto mais escuro
+   sobre fundo mais claro */
+.status.espera{background:var(--ok-bg);color:#0B7A43}
 .fim-foto{position:relative;margin:16px 16px 4px;border-radius:var(--r);overflow:hidden}
 .fim-foto img{width:100%;height:132px;object-fit:cover;display:block}
 .fim-foto span{position:absolute;left:16px;bottom:14px;color:#fff;font-size:14.5px;font-weight:700;
