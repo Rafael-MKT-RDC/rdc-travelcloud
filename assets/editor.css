@@ -59,9 +59,14 @@ h1{font-family:var(--ff-d);font-size:clamp(23px,3vw,30px);margin:0;letter-spacin
 .selo{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
   background:var(--panel-2);color:var(--ink-2);border-radius:999px;padding:3px 9px}
 .selo.ok{background:var(--ok-bg);color:var(--ok)}
-.proto .acoes{display:flex;gap:6px;padding:11px 13px;border-top:1px solid var(--line-2);flex-wrap:wrap}
-.proto .acoes .b{padding:6px 11px;font-size:12px}
-.proto .acoes .perigo{margin-left:auto}
+/* quatro ações em grade 2x2, e o excluir sozinho embaixo: com tudo em
+   linha os botões quebravam em lugares diferentes em cada cartão */
+.proto .acoes{display:grid;grid-template-columns:1fr 1fr;gap:7px;
+  padding:12px 13px 13px;border-top:1px solid var(--line-2)}
+.proto .acoes .b{padding:8px 10px;font-size:12.5px;justify-content:center;width:100%}
+.proto .acoes .acoes-fim{grid-column:1/-1;display:flex;justify-content:flex-end;
+  border-top:1px solid var(--line-2);margin-top:3px;padding-top:9px}
+.proto .acoes .acoes-fim .b{width:auto;padding:6px 12px;font-size:12px}
 .vazio{background:var(--panel);border:1.5px dashed var(--line);border-radius:16px;padding:44px 24px;
   text-align:center;color:var(--ink-2);font-size:14.5px;line-height:1.6}
 
@@ -223,9 +228,9 @@ code{background:var(--panel-2);border-radius:5px;padding:2px 6px;font-size:12.5p
   /* alvos de toque confortáveis */
   .b{padding:13px 20px;font-size:15px}
   .b.mini{padding:10px 15px;font-size:13.5px}
-  .proto .acoes{padding:12px}
-  .proto .acoes .b{padding:10px 14px;font-size:13px;flex:1 1 auto;justify-content:center}
-  .proto .acoes .perigo{margin-left:0}
+  .proto .acoes{padding:12px;gap:8px}
+  .proto .acoes .b{padding:13px 12px;font-size:13px}
+  .proto .acoes .acoes-fim .b{padding:10px 16px}
   .chave i{width:48px;height:28px}
   .chave i::after{width:23px;height:23px}
   .chave.on i::after{left:22.5px}
@@ -252,4 +257,22 @@ code{background:var(--panel-2);border-radius:5px;padding:2px 6px;font-size:12.5p
   .qr-moldura{margin:0 auto}
   .qr-moldura canvas{width:168px;height:168px}
   .qr-lado{flex:1 1 100%}
+}
+
+/* --- cores encontradas dentro do logo --- */
+.cores-logo{margin-top:14px}
+.cores-topo{font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:9px}
+.cores-topo span{font-weight:400;color:var(--ink-3)}
+.cores-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px}
+.cor-achada{display:flex;align-items:center;gap:9px;padding:8px 10px;cursor:pointer;
+  background:var(--panel);border:1.5px solid var(--line);border-radius:10px;
+  font-family:inherit;font-size:12px;color:var(--ink-2);transition:border-color .15s,transform .12s}
+.cor-achada:hover{border-color:var(--ink-3);transform:translateY(-1px)}
+.cor-achada i{width:22px;height:22px;border-radius:6px;flex:0 0 auto;
+  box-shadow:inset 0 0 0 1px rgba(128,128,128,.28)}
+.cor-achada span{font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.cor-achada.sel{border-color:var(--live);color:var(--ink);font-weight:600;
+  box-shadow:inset 0 0 0 1px var(--live)}
+@media (max-width:640px){
+  .cores-grade{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
 }

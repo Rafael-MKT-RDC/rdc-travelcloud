@@ -141,13 +141,33 @@ function coresDoLogo(url, feito){
       if(!caixas[k]) caixas[k] = {n:0, r:0, g:0, b:0, s:hsl[1]};
       var q = caixas[k]; q.n++; q.r+=rgb[0]; q.g+=rgb[1]; q.b+=rgb[2];
     }
-    var arr = Object.keys(caixas).map(function(k){ var q=caixas[k];
-      return {peso:q.n*(0.55+q.s), cor:rgb2hex([q.r/q.n,q.g/q.n,q.b/q.n])}; });
-    arr.sort(function(a,b){return b.peso-a.peso});
-    var vistos = {}, saida = [];
-    for(var j=0;j<arr.length && saida.length<4;j++){
-      var hh = rgb2hsl(hex2rgb(arr[j].cor))[0], faixa = Math.round(hh/25);
-      if(vistos[faixa]) continue; vistos[faixa]=1; saida.push(arr[j].cor);
+    function junta(qs){
+      var arr = Object.keys(qs).map(function(k){ var q=qs[k];
+        return {peso:q.n*(0.55+q.s), cor:rgb2hex([q.r/q.n,q.g/q.n,q.b/q.n])}; });
+      arr.sort(function(a,b){return b.peso-a.peso});
+      var vistos = {}, saida = [];
+      for(var j=0;j<arr.length && saida.length<6;j++){
+        var hsl = rgb2hsl(hex2rgb(arr[j].cor));
+        /* agrupa por matiz, mas em cinza o matiz não diz nada: aí separa por tom */
+        var faixa = hsl[1] < 0.18 ? 'c'+Math.round(hsl[2]*6) : 'm'+Math.round(hsl[0]/25);
+        if(vistos[faixa]) continue; vistos[faixa]=1; saida.push(arr[j].cor);
+      }
+      return saida;
+    }
+    var saida = junta(caixas);
+    /* logo preto e branco não tem cor viva nenhuma: em vez de devolver
+       lista vazia, volta a olhar os tons neutros */
+    if(!saida.length){
+      var neutras = {};
+      for(var i=0;i<d.length;i+=4){
+        if(d[i+3] < 200) continue;
+        var rgb=[d[i],d[i+1],d[i+2]], hsl=rgb2hsl(rgb);
+        if(hsl[2] > 0.9) continue;                 /* branco do fundo, não */
+        var k = Math.round(hsl[2]*6);
+        if(!neutras[k]) neutras[k] = {n:0,r:0,g:0,b:0,s:hsl[1]};
+        var q = neutras[k]; q.n++; q.r+=rgb[0]; q.g+=rgb[1]; q.b+=rgb[2];
+      }
+      saida = junta(neutras);
     }
     feito(saida);
   };
@@ -492,9 +512,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=15">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=16">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=15"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=16"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -622,11 +642,11 @@ function verGaleria(){
           '<span class="selo ar">No ar</span>'+
         '</div></div>'+
       '<div class="acoes">'+
+        '<button class="b mini forte" data-editar="'+i+'">Editar</button>'+
         '<a class="b mini" href="'+esc(linkDe(p))+'" target="_blank" rel="noopener">Abrir link</a>'+
         '<button class="b mini" data-link="'+i+'">Copiar link</button>'+
         '<button class="b mini" data-qr="'+i+'">QR code</button>'+
-        '<button class="b mini" data-editar="'+i+'">Editar</button>'+
-        '<button class="b mini perigo" data-excluir="'+i+'">Excluir</button>'+
+        '<div class="acoes-fim"><button class="b mini perigo" data-excluir="'+i+'">Excluir</button></div>'+
       '</div></div>';
   }).join('') : '';
 
@@ -725,9 +745,9 @@ function verEditor(cfg, idx){
         '<input type="file" id="fLogo" accept="image/*"></label>'+
       '<div class="previa-logo'+(cfg.logo?'':' esconde')+'" id="previaLogo">'+
         '<div class="cx"><img id="imgLogo" src="'+esc(cfg.logo||'')+'" alt=""></div>'+
-        '<button class="b mini" id="btCoresLogo">Extrair cores do logo</button>'+
+        '<button class="b mini" id="btCoresLogo">Reler cores</button>'+
         '<button class="b mini perigo" id="btTiraLogo">Remover</button></div>'+
-      '<div id="sugestoes" class="tons"></div></div>'+
+      '<div id="coresLogo" class="cores-logo"></div></div>'+
     '<div class="campo2"><label>Cor principal</label>'+
       '<div class="cor-linha">'+
         '<span class="cor-amostra" style="background:'+cfg.cores.brand+'">'+
@@ -900,16 +920,38 @@ function ligarEditor(){
     rascunho.logo = url;
     $('imgLogo').src = url; $('previaLogo').classList.remove('esconde');
     atualizarPrevia();
+    pintaCoresDoLogo(url);
+  }
+  /* As cores que existem dentro do logo, para escolher com um clique —
+     o mesmo caminho de quem busca pelo site, só que com o arquivo. */
+  function pintaCoresDoLogo(url){
+    var caixa = $('coresLogo'); if(!caixa) return;
+    caixa.innerHTML = '<p class="dica" style="margin:0">Lendo as cores do logo…</p>';
     coresDoLogo(url, function(cores){
-      if(!cores.length){ $('sugestoes').innerHTML=''; return; }
-      $('sugestoes').innerHTML = '<span class="tom" style="background:none;padding-left:0">Cores do logo:</span>'+
-        cores.map(function(c){ return '<button class="tom" data-sug="'+c+'" style="cursor:pointer;border:0">'+
-          '<i style="background:'+c+'"></i>'+c+'</button>'; }).join('');
-      $('sugestoes').querySelectorAll('[data-sug]').forEach(function(b){
-        b.onclick = function(){ aplicarCor(b.dataset.sug,'sugestao'); };
+      if(!cores.length){
+        caixa.innerHTML = '<p class="dica" style="margin:0">Não consegui ler cores deste arquivo. '+
+          'Escolha a cor principal abaixo.</p>';
+        return;
+      }
+      caixa.innerHTML = '<div class="cores-topo">Cores encontradas no logo '+
+        '<span>clique para usar como cor principal</span></div>'+
+        '<div class="cores-grade">'+
+        cores.map(function(c){
+          var sel = (c.toUpperCase() === String(rascunho.cores.brand||'').toUpperCase()) ? ' sel' : '';
+          return '<button type="button" class="cor-achada'+sel+'" data-sug="'+c+'" title="Usar '+c+'">'+
+                 '<i style="background:'+c+'"></i><span>'+c+'</span></button>';
+        }).join('') + '</div>';
+      caixa.querySelectorAll('[data-sug]').forEach(function(b){
+        b.onclick = function(){
+          aplicarCor(b.dataset.sug, 'sugestao');
+          caixa.querySelectorAll('.cor-achada').forEach(function(o){ o.classList.remove('sel'); });
+          b.classList.add('sel');
+        };
       });
     });
   }
+  window.TC_PINTA_CORES = pintaCoresDoLogo;
+
   function ligarSolta(zona, input, feito){
     zona.addEventListener('dragover', function(e){ e.preventDefault(); zona.classList.add('sobre'); });
     zona.addEventListener('dragleave', function(){ zona.classList.remove('sobre'); });
@@ -920,9 +962,10 @@ function ligarEditor(){
     input.onchange = function(){ if(this.files[0]) lerArquivo(this.files[0], feito); };
   }
   ligarSolta($('zonaLogo'), $('fLogo'), usarLogo);
-  $('btCoresLogo').onclick = function(){ if(rascunho.logo) usarLogo(rascunho.logo); };
+  $('btCoresLogo').onclick = function(){ if(rascunho.logo) pintaCoresDoLogo(rascunho.logo); };
+  if(rascunho.logo) pintaCoresDoLogo(rascunho.logo);
   $('btTiraLogo').onclick = function(){
-    rascunho.logo = null; $('previaLogo').classList.add('esconde'); $('sugestoes').innerHTML='';
+    rascunho.logo = null; $('previaLogo').classList.add('esconde'); $('coresLogo').innerHTML='';
     atualizarPrevia();
   };
 
