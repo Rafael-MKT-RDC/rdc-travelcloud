@@ -703,6 +703,13 @@ a,button,label,select,input,.opt,.tab,.card,.dest,.chip{touch-action:manipulatio
 .vant .vt{display:flex;align-items:center;gap:9px;margin-bottom:5px;color:var(--brand)}
 .vant .vt b{font-size:14.5px;color:var(--ink);letter-spacing:-.2px}
 .vant p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.pfaixa b{color:var(--ink);font-weight:700}
+.ptxt.destaque{color:var(--ink);font-weight:600;font-size:14.5px;
+  border-left:3px solid var(--brand);padding-left:12px;margin:4px 0 16px}
+.pfecho{margin:18px 0 6px;font-size:15px;font-weight:600;line-height:1.5;color:var(--ink);
+  background:var(--brand-light);border-radius:var(--r);padding:14px 16px}
+.pfecho b{color:var(--brand)}
+.pnota{margin:0;font-size:11.5px;line-height:1.5;color:var(--ink-3)}
 .ptermos{display:block;text-align:center;margin:20px 0 4px;font-size:14px;color:var(--brand);
   text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .pacao{padding:18px 0 6px;display:flex;justify-content:center}

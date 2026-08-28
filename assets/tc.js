@@ -561,26 +561,28 @@ V.prime = function(){
   return '<div class="stickytop">'+sysbar(true)+
    '<div class="hd plain">'+logoHTML()+'<div class="div"></div>'+
      '<div class="rot">'+esc(C.rotulo)+'</div></div>'+
-   '<div class="pfaixa"><span>RDC Prime! Viaje pagando menos o ano inteiro.</span>'+
+   '<div class="pfaixa"><span><b>RDC Prime.</b> Mais economia para viajar o ano todo.</span>'+
      '<button class="pfechar" data-go="'+voltaDoPrime+'" aria-label="Fechar">✕</button></div>'+
    '</div>'+
   '<div class="pbody">'+
-    '<h2 class="ptit">As melhores <i>ofertas de viagem</i>, sempre.</h2>'+
-    '<div class="pcard"><div class="pval">→ R$ 29,90<small>/mês</small></div>'+
-      '<p>Assine uma vez e transforme cada reserva em oportunidade de economia.</p></div>'+
+    '<h2 class="ptit">Mais economia em cada <i>oportunidade de viajar</i>.</h2>'+
+    '<div class="pcard"><div class="pval">R$ 29,90<small>/mês</small></div>'+
+      '<p>Assine o RDC Prime e encontre <b>descontos de até 40%</b> em serviços '+
+      'turísticos selecionados.</p></div>'+
     '<h3 class="psub">O que é o RDC Prime?</h3>'+
-    '<p class="ptxt">Uma assinatura mensal para viajar com benefícios em cada nova reserva.</p>'+
-    '<p class="ptxt">Por <b>R$ 29,90/mês</b>, o RDC Prime libera preços especiais em hospedagens, '+
-      'passagens, pacotes, locação de carros, seguro viagem e experiências selecionadas.</p>'+
-    '<h3 class="psub">Vantagens</h3>'+
-    vantagem(I.selo,'Benefícios em toda a jornada',
-      'Carros, seguro viagem e serviços que completam o roteiro.')+
-    vantagem(I.etiqueta,'Economia visível',
-      'Garantia de melhor oferta sempre e parcelamento em até 6x sem juros para qualquer reserva.')+
-    vantagem(I.mala,'Viaje livre de preocupações',
-      'Atendimento com time de especialistas e suporte humano 24 horas.')+
-    vantagem(I.bilhete,'Isenções em taxas',
-      'Isenção nas taxas de alteração, antecipação de check-in e postergação de check-out.')+
+    '<p class="ptxt">O RDC Prime é um <b>acelerador adicional</b>, disponível por '+
+      '<b>assinatura mensal</b>.</p>'+
+    '<p class="ptxt">Com ele, você pode encontrar <b>descontos de até 40%</b> em serviços '+
+      'turísticos selecionados, criando <b>novas oportunidades para viajar</b> ao longo do ano.</p>'+
+    '<p class="ptxt destaque">Porque viajar mais não precisa esperar as próximas férias.</p>'+
+    '<h3 class="psub">O que você encontra com o RDC Prime</h3>'+
+    vantagem(I.etiqueta,'Até 40% de desconto',
+      'Economize em serviços turísticos selecionados, conforme disponibilidade e regras de cada oferta.')+
+    vantagem(I.mala,'Mais oportunidades para viajar',
+      'Aproveite a economia para planejar férias, feriados, finais de semana e pequenas pausas ao longo do ano.')+
+    '<p class="pfecho">Mais economia para ajudar a transformar <b>viagem em hábito</b>.</p>'+
+    '<p class="pnota">*Os descontos variam conforme a disponibilidade, o serviço escolhido '+
+      'e as regras de cada oferta.</p>'+
     '<a class="ptermos">Termos de uso e regulamento</a>'+
     '<div class="pacao"><button class="btn ghost" data-go="'+voltaDoPrime+'">Fechar ✕</button></div>'+
   '</div>'+ rodape();
