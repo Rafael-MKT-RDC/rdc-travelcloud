@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/tc.css?v=3">
+<link rel="stylesheet" href="/assets/tc.css?v=3">
 </head>
 <body>
 <div class="phone"><div class="vp" id="vp"></div></div>
@@ -20,7 +20,7 @@
 window.TC = {
   cliente : "BRB",          // nome do cliente (aparece nos textos)
   rotulo  : "Viagens",            // nome do benefício no header
-  logo    : "logo.png",
+  logo    : "/brb/logo.png",
   prime   : true,                 // mostrar blocos RDC Prime
 
   cores: {
@@ -33,13 +33,13 @@ window.TC = {
 
   appProprio: {                   // cliente que já tem app próprio
     ativo   : true,              // true = começa na tela do app do cliente
-    imagem  : "app-home.jpg",     // print da home do app
+    imagem  : "/brb/app-home.jpg",     // print da home do app
     hotspot : {x:2.4, y:35.8, w:95, h:6.4}   // área clicável do botão, em % da imagem
   }
 };
 </script>
 <!-- =================================================================== -->
 
-<script src="../assets/tc.js?v=3"></script>
+<script src="/assets/tc.js?v=3"></script>
 </body>
 </html>

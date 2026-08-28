@@ -236,11 +236,11 @@ function arquivoCliente(cfg){
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n'+
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
   '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n'+
-  '<link rel="stylesheet" href="../assets/tc.css?v=3">\n</head>\n<body>\n'+
+  '<link rel="stylesheet" href="/assets/tc.css?v=3">\n</head>\n<body>\n'+
   '<div class="phone"><div class="vp" id="vp"></div></div>\n\n'+
   '<!-- bloco gerado pelo editor -->\n<script>\nwindow.TC = {\n'+
   c.join(',\n')+',\n\n  cores: {\n'+cores.join(',\n')+'\n  },\n\n'+app+'\n};\n</'+'script>\n\n'+
-  '<script src="../assets/tc.js?v=3"></'+'script>\n</body>\n</html>\n';
+  '<script src="/assets/tc.js?v=3"></'+'script>\n</body>\n</html>\n';
 }
 function baixarDireto(nome, txt){
   try{
