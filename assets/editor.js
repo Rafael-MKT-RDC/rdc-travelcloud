@@ -464,8 +464,10 @@ function verEditor(cfg, idx){
   '<div class="bloco"><h2>Marca</h2>'+
     '<p class="dica">Comece pelo site do cliente. Se a captura não trouxer o que você quer, envie o logo e ajuste a cor à mão.</p>'+
     '<div class="campo2"><label>Site do cliente</label>'+
-      '<div class="juntos"><input type="url" id="fSite" placeholder="https://www.brb.com.br">'+
-      '<button class="b" id="btBuscar">Buscar marca</button></div></div>'+
+      '<div class="juntos"><input type="url" id="fSite" placeholder="brb.com.br">'+
+      '<button class="b" id="btBuscar">Buscar logos</button></div>'+
+      '<div class="ajuda">Traz os logos que existem no site do cliente. Clique em um para usar.</div></div>'+
+    '<div id="achadosLogo"></div>'+
     '<div class="campo2"><label>Logo</label>'+
       '<label class="solta" id="zonaLogo">Clique ou arraste o arquivo do logo aqui<br>'+
         '<small>PNG com fundo transparente ou SVG</small>'+
@@ -600,7 +602,13 @@ function ligarEditor(){
   };
 
   /* logo */
-  function usarLogo(url){
+  function usarLogo(url, daBusca){
+    if(daBusca && TEM_API){
+      // guarda no servidor para todo mundo enxergar
+      pedir('/api/arquivo', {method:'POST', body: JSON.stringify({nome:'logo', dados:url})})
+        .then(function(d){ rascunho.logo = d.url; atualizarPrevia(); })
+        .catch(function(){});
+    }
     rascunho.logo = url;
     $('imgLogo').src = url; $('previaLogo').classList.remove('esconde');
     atualizarPrevia();
@@ -721,24 +729,68 @@ function ligarEditor(){
   }
 }
 
-/* ---------- captura pelo site ---------- */
+/* ---------- captura pelo site: mostra as opções e você escolhe ---------- */
+var fundoEscuro = false;
+function pintarAchados(logos, usarLogo){
+  var el = document.getElementById('achadosLogo');
+  if(!el) return;
+  if(!logos || !logos.length){ el.innerHTML = ''; return; }
+  el.innerHTML =
+    '<div class="achados-topo"><b>'+logos.length+' logo'+(logos.length>1?'s':'')+' encontrado'+
+      (logos.length>1?'s':'')+'</b>'+
+      '<button class="b mini" id="btFundo">'+(fundoEscuro?'Ver em fundo claro':'Ver em fundo escuro')+'</button></div>'+
+    '<div class="achados'+(fundoEscuro?' escuro':'')+'">'+
+      logos.map(function(l,i){
+        return '<button class="achado" data-logo="'+i+'" title="'+esc(l.origem)+'">'+
+          '<img src="'+esc(l.url)+'" alt="" loading="lazy">'+
+          '<span>'+esc(l.origem)+'</span></button>';
+      }).join('')+
+    '</div>';
+  document.getElementById('btFundo').onclick = function(){
+    fundoEscuro = !fundoEscuro; pintarAchados(logos, usarLogo);
+  };
+  el.querySelectorAll('[data-logo]').forEach(function(b){
+    b.onclick = function(){
+      var l = logos[+b.dataset.logo];
+      b.classList.add('pegando');
+      aviso('Baixando o logo escolhido…','info');
+      fetch('/api/brand?pegar=' + encodeURIComponent(l.url))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          b.classList.remove('pegando');
+          if(!d.dados) throw new Error(d.erro || 'falhou');
+          usarLogo(d.dados, true);
+          el.querySelectorAll('.achado').forEach(function(x){ x.classList.remove('sel'); });
+          b.classList.add('sel');
+          aviso('Logo aplicado. As cores dele aparecem logo abaixo.','bom');
+        })
+        .catch(function(){ b.classList.remove('pegando');
+          aviso('Não consegui baixar esse logo. Tente outro da lista.','ruim'); });
+    };
+  });
+}
 function buscarMarca(url, usarLogo, aplicarCor){
   if(!url || !/\./.test(url)){ aviso('Digite o endereço do site, por exemplo <code>brb.com.br</code>.','ruim'); return; }
-  if(!/^https?:/i.test(url)) url = 'https://' + url;
-  aviso('Procurando logo e cores em '+esc(url)+'…','info');
+  var bt = document.getElementById('btBuscar');
+  bt.textContent = 'Procurando…'; bt.disabled = true;
+  aviso('Procurando logos em '+esc(url.replace(/^https?:\/\//,''))+'…','info');
   fetch('/api/brand?url=' + encodeURIComponent(url))
-    .then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); })
+    .then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.erro||'http'); return d; }); })
     .then(function(d){
-      var achou = [];
-      if(d.logo){ usarLogo(d.logo); achou.push('logo'); }
-      if(d.cor){ aplicarCor(d.cor,'site'); achou.push('cor '+d.cor); }
-      aviso(achou.length
-        ? 'Encontrei: '+achou.join(' e ')+'. Confira e ajuste se precisar.'
-        : 'O site respondeu, mas não achei logo nem cor declarada. Envie o logo abaixo.', achou.length?'bom':'info');
+      bt.textContent = 'Buscar logos'; bt.disabled = false;
+      if(d.cor) aplicarCor(d.cor,'site');
+      pintarAchados(d.logos, usarLogo);
+      if(!d.logos || !d.logos.length){
+        aviso('O site respondeu, mas não achei nenhum logo. Envie o arquivo abaixo.','info');
+      } else {
+        aviso('Escolha um dos logos acima'+(d.cor ? '. A cor declarada pelo site ('+d.cor+') já foi aplicada.' : '.'),'bom');
+      }
     })
-    .catch(function(){
-      aviso('A captura automática precisa da versão publicada (ela roda no servidor, porque o navegador '+
-            'não consegue ler o site de outra empresa direto). <b>Envie o logo abaixo</b> — eu extraio as cores dele.','info');
+    .catch(function(e){
+      bt.textContent = 'Buscar logos'; bt.disabled = false;
+      aviso(window.TC_INLINE
+        ? 'A busca precisa da versão publicada — ela roda no servidor. <b>Envie o logo abaixo</b>.'
+        : 'Não consegui ler esse site ('+esc(e.message)+'). <b>Envie o logo abaixo</b> — eu tiro as cores dele.', 'info');
     });
 }
 
