@@ -534,6 +534,12 @@ var NOMES=[
 /* ---------- 7. TELAS ---------- */
 var V = {};
 
+/* Tela de partida do protótipo: a home do app do cliente, quando ele tem uma
+   (e o print foi enviado); senão, o portal padrão. */
+function telaInicial(){
+  return (C.appProprio && C.appProprio.ativo && C.appProprio.imagem) ? 'appcliente' : 'home';
+}
+
 V.appcliente = function(){
   var a = C.appProprio || {};
   var h = a.hotspot || {x:3,y:36,w:94,h:7};
@@ -930,7 +936,7 @@ V.conclusao = function(){
   var email = '<b>'+esc(S.email)+'</b>';
 
   var fecho = '<div class="boa">Tenha uma boa viagem!</div>'+
-    '<div style="padding:0 16px 22px"><button class="btn ghost casa" data-go="home">'+
+    '<div style="padding:0 16px 22px"><button class="btn ghost casa" data-go="'+telaInicial()+'">'+
       I.casa+' Voltar para Início</button></div>'+ rodape();
 
   if(!novoAssinante){
@@ -1249,7 +1255,7 @@ function init(){
   vp.parentNode.appendChild(modal);
   bind();
   escalar();
-  var inicial = (C.appProprio&&C.appProprio.ativo) ? 'appcliente' : 'home';
+  var inicial = telaInicial();
   go(inicial);
 }
 // o motor sobe assim que o #vp existe — não espera folha de estilo externa (fontes)

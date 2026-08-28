@@ -204,9 +204,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=6">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=8">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=6"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=8"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -458,13 +458,20 @@ function verEditor(cfg, idx){
   '<div class="bloco"><h2>App próprio do cliente</h2>'+
     '<p class="dica">Para clientes que já têm app. O protótipo abre na home deles e o botão que você marcar inicia a navegação.</p>'+
     '<label class="chave'+(ap.ativo?' on':'')+'" id="chApp"><i></i><span>Começar pela tela do app do cliente</span></label>'+
-    '<div id="areaApp" class="'+(ap.ativo?'':'esconde')+'">'+
-      '<label class="solta" id="zonaApp" style="margin-top:14px">Clique ou arraste o print da home do app'+
-        '<input type="file" id="fApp" accept="image/*"></label>'+
-      '<div id="mapaBox" class="'+(ap.imagem?'':'esconde')+'">'+
-        '<p class="dica" style="margin:14px 0 0">Arraste sobre a imagem para marcar onde fica o botão que abre as viagens.</p>'+
-        '<div class="mapa" id="mapa"><img id="imgApp" src="'+esc(ap.imagem||'')+'" alt="">'+
-        '<span class="alvo" id="alvo"></span></div></div>'+
+    '<div id="areaApp" class="app-area'+(ap.imagem?' com-imagem':'')+(ap.ativo?'':' esconde')+'">'+
+      '<div id="mapa" class="mapa'+(ap.imagem?'':' esconde')+'">'+
+        '<img id="imgApp" src="'+esc(ap.imagem||'')+'" alt="">'+
+        '<span class="alvo" id="alvo"></span></div>'+
+      '<div class="lado">'+
+        '<p class="dica so-com-img">Arraste sobre a imagem para marcar onde fica o botão '+
+          'que abre as viagens. O retângulo azul é a área que o cliente vai tocar.</p>'+
+        '<label class="solta" id="zonaApp">'+
+          '<b class="so-sem-img">Clique ou arraste o print da home do app</b>'+
+          '<b class="so-com-img">Trocar o print</b>'+
+          '<small class="so-sem-img">PNG ou JPG da tela inicial do app do cliente</small>'+
+          '<input type="file" id="fApp" accept="image/*"></label>'+
+        '<button class="b mini perigo so-com-img" id="btTiraApp">Remover imagem</button>'+
+      '</div>'+
     '</div></div>'+
 
   '<div class="bloco"><h2>Publicar</h2>'+
@@ -594,9 +601,19 @@ function ligarEditor(){
   };
   ligarSolta($('zonaApp'), $('fApp'), function(url){
     rascunho.appProprio.imagem = url;
-    $('imgApp').src = url; $('mapaBox').classList.remove('esconde');
+    $('imgApp').src = url;
+    $('mapa').classList.remove('esconde');
+    $('areaApp').classList.add('com-imagem');
     desenharAlvo(); atualizarPrevia();
   });
+  $('btTiraApp').onclick = function(){
+    rascunho.appProprio.imagem = '';
+    $('imgApp').removeAttribute('src');
+    $('mapa').classList.add('esconde');
+    $('areaApp').classList.remove('com-imagem');
+    $('fApp').value = '';
+    atualizarPrevia();
+  };
   function desenharAlvo(){
     var h = rascunho.appProprio.hotspot, a = $('alvo');
     if(!a) return;
@@ -606,6 +623,7 @@ function ligarEditor(){
   if(mapa){
     desenharAlvo();
     mapa.addEventListener('pointerdown', function(e){
+      e.preventDefault();
       var r = mapa.getBoundingClientRect();
       arrastando = true; ax = (e.clientX-r.left)/r.width*100; ay = (e.clientY-r.top)/r.height*100;
       mapa.setPointerCapture(e.pointerId);
