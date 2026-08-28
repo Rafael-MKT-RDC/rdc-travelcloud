@@ -11,6 +11,16 @@ export default async function handler(req, res) {
   try {
     const r = await list({ prefix: 'estado/', limit: 5 });
     info.blobs = (r.blobs || []).map(b => ({ pathname: b.pathname, uploadedAt: b.uploadedAt, size: b.size }));
+    const atual = (r.blobs || []).sort((x, y) => new Date(y.uploadedAt) - new Date(x.uploadedAt))[0];
+    if (atual) {
+      try {
+        const resp = await fetch(atual.url, { cache: 'no-store' });
+        const txt = await resp.text();
+        info.leitura = { status: resp.status, bytes: txt.length, inicio: txt.slice(0, 120) };
+        try { const d = JSON.parse(txt); info.leitura.chaves = Object.keys(d); info.leitura.clientes = Array.isArray(d.clientes) ? d.clientes.length : null; }
+        catch (e2) { info.leitura.jsonErro = String(e2.message).slice(0, 200); }
+      } catch (e1) { info.leitura = { fetchErro: String(e1 && e1.message).slice(0, 300) }; }
+    }
     info.ok = true;
   } catch (e) {
     info.ok = false;
