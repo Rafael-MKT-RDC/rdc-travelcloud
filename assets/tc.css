@@ -634,7 +634,6 @@ a,button,label,select,input,.opt,.tab,.card,.dest,.chip{touch-action:manipulatio
 /* o resumo passa a ter a altura do próprio conteúdo, limitado a ~3/4 da tela */
 .sheet,.sheet.fechado{height:auto;max-height:74%}
 
-
 /* ============================================================
    CELULAR DE VERDADE (<520px) — navegação com o dedo
    ============================================================ */
@@ -664,3 +663,45 @@ a,button,label,select,input,.opt,.tab,.card,.dest,.chip{touch-action:manipulatio
   .stepper button{width:38px;height:38px}
   .foot a{padding:4px 0;display:inline-block}
 }
+
+/* ============================================================
+   OFERTA COM PRIME — destacada desde o início, marcada só no toque
+   ============================================================ */
+.oferta.com{background:linear-gradient(115deg,var(--brand),color-mix(in srgb,var(--brand) 72%,#fff));
+  border-color:transparent;color:var(--brand-ink)}
+.oferta.com .radio{border-color:var(--brand-ink);color:var(--brand-ink)}
+.oferta.com .of-preco small,.oferta.com .of-eco,.oferta.com .of-par{color:var(--brand-ink)}
+.oferta.com:hover{border-color:transparent}
+/* marcada: anel por fora e o círculo preenchido */
+.oferta.com.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 32%,#fff)}
+.oferta.com.sel .radio{background:var(--brand-ink);color:var(--brand)}
+
+/* ============================================================
+   TELA DO RDC PRIME (Figma · Prospects · @Prime)
+   ============================================================ */
+.pfaixa{display:flex;align-items:center;gap:12px;background:#fff;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:11px 16px;font-size:12.5px;color:var(--ink-2)}
+.pfaixa span{flex:1;line-height:1.4}
+.pfaixa .pfechar{border:0;background:none;color:var(--ink);font-size:17px;line-height:1;
+  padding:4px 2px;cursor:pointer}
+.pbody{padding:22px 18px 8px}
+.ptit{margin:0 0 20px;font-size:26px;line-height:1.24;letter-spacing:-.8px;font-weight:800}
+.ptit i{font-style:normal;color:var(--brand)}
+.pcard{background:var(--brand);color:var(--brand-ink);border-radius:var(--r);padding:18px 18px 20px;
+  margin-bottom:24px}
+.pcard .pval{font-size:25px;font-weight:800;letter-spacing:-.7px}
+.pcard .pval small{font-size:13px;font-weight:600;letter-spacing:0}
+.pcard p{margin:8px 0 0;font-size:13px;line-height:1.5;opacity:.85}
+.psub{margin:0 0 10px;font-size:18px;font-weight:700;letter-spacing:-.3px}
+.ptxt{margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.ptxt b{color:var(--ink)}
+.pbody .psub+.vant{margin-top:0}
+.vant{background:var(--bg-2);border-radius:var(--r);padding:14px 15px 15px;margin-bottom:10px}
+.vant .vt{display:flex;align-items:center;gap:9px;margin-bottom:5px;color:var(--brand)}
+.vant .vt b{font-size:14.5px;color:var(--ink);letter-spacing:-.2px}
+.vant p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.ptermos{display:block;text-align:center;margin:20px 0 4px;font-size:14px;color:var(--brand);
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.pacao{padding:18px 0 6px;display:flex;justify-content:center}
+.pacao .btn.ghost{padding:12px 26px}
