@@ -80,17 +80,53 @@ export default async function handler(req, res) {
 
   const host = new URL(base).host;
   const candidatos = acharNoHtml(html, base);
-  candidatos.push({ url: `https://www.google.com/s2/favicons?domain=${host}&sz=256`, origem: 'ícone do Google', peso: 2 });
-  candidatos.push({ url: `https://icons.duckduckgo.com/ip3/${host}.ico`, origem: 'ícone', peso: 1 });
 
-  // tira repetidos, ordena pelos mais promissores e confirma que a imagem existe
-  const vistos = new Set(), fila = [];
-  for (const c of candidatos.sort((a, b) => b.peso - a.peso)) {
-    if (vistos.has(c.url)) continue;
-    vistos.add(c.url);
-    fila.push(c);
-    if (fila.length >= 14) break;
+  // logo declarado em CSS (background-image), comum em sites feitos em WordPress
+  let m2; const reCss = /url\((['"]?)([^'")]*(?:logo|marca|brand)[^'")]*\.(?:svg|png|webp|jpg|jpeg))\1\)/gi;
+  while ((m2 = reCss.exec(html)) !== null) {
+    try { candidatos.push({ url: new URL(m2[2], base).href, origem: 'logo no CSS', peso: 8 }); } catch {}
   }
+
+  // Wikidata: pega o logo oficial de marcas conhecidas, pelo nome
+  const doWiki = [];
+  if (nome) {
+    try {
+      const busca = await baixar('https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=pt&uselang=pt&limit=1&search=' + encodeURIComponent(nome), 6000);
+      const jb = await busca.json();
+      const id = jb.search && jb.search[0] && jb.search[0].id;
+      if (id) {
+        const cl = await baixar(`https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&entity=${id}&property=P154`, 6000);
+        const jc = await cl.json();
+        const arquivo = jc.claims && jc.claims.P154 && jc.claims.P154[0]
+          && jc.claims.P154[0].mainsnak.datavalue && jc.claims.P154[0].mainsnak.datavalue.value;
+        if (arquivo) {
+          doWiki.push({
+            url: 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(arquivo) + '?width=480',
+            origem: 'Wikipédia', peso: 12
+          });
+        }
+      }
+    } catch {}
+  }
+
+  // agrupa variações do mesmo ícone (favicon-57, favicon-114…) e fica com a maior
+  const familia = (u) => u.replace(/\d+/g, '#');
+  const porFamilia = new Map();
+  for (const c of candidatos.sort((a, b) => b.peso - a.peso)) {
+    const f = familia(c.url);
+    const atual = porFamilia.get(f);
+    const tamanho = (c.url.match(/(\d{2,4})/g) || ['0']).map(Number).sort((a, b) => b - a)[0];
+    if (!atual || c.peso > atual.peso || (c.peso === atual.peso && tamanho > atual.tamanho)) {
+      porFamilia.set(f, { ...c, tamanho });
+    }
+  }
+
+  const fila = [
+    ...doWiki,
+    ...Array.from(porFamilia.values()).sort((a, b) => b.peso - a.peso || b.tamanho - a.tamanho).slice(0, 8),
+    { url: `https://www.google.com/s2/favicons?domain=${host}&sz=256`, origem: 'ícone do site', peso: 2 },
+    { url: `https://icons.duckduckgo.com/ip3/${host}.ico`, origem: 'ícone alternativo', peso: 1 }
+  ];
 
   const checados = await Promise.all(fila.map(async (c) => {
     try {
@@ -98,12 +134,17 @@ export default async function handler(req, res) {
       if (!r.ok) return null;
       const tipo = (r.headers.get('content-type') || '').split(';')[0];
       if (!/^image\//.test(tipo)) return null;
-      const tam = Number(r.headers.get('content-length') || 0);
-      if (tam && tam > 3 * 1024 * 1024) return null;
-      return { url: r.url, origem: c.origem, tipo, peso: c.peso + (/svg/.test(tipo) ? 3 : 0) };
+      const bytes = Number(r.headers.get('content-length') || 0);
+      if (bytes > 3 * 1024 * 1024) return null;
+      return { url: r.url, origem: c.origem, tipo, peso: c.peso + (/svg/.test(tipo) ? 3 : 0), bytes };
     } catch { return null; }
   }));
 
-  const logos = checados.filter(Boolean).sort((a, b) => b.peso - a.peso).slice(0, 8);
+  const vistas = new Set();
+  const logos = checados.filter(Boolean)
+    .filter(l => { if (vistas.has(l.url)) return false; vistas.add(l.url); return true; })
+    .sort((a, b) => b.peso - a.peso || b.bytes - a.bytes)
+    .slice(0, 8);
+
   return res.status(200).json({ logos, cor, nome, origem: base });
 }
