@@ -480,9 +480,41 @@ function logoHTML(){
   if(C.padrao) return '<div class="logo-ph">seu<br>logo<br>aqui</div>';
   return '<div class="logo-txt">'+esc(C.cliente)+'</div>';
 }
+/* barra de status igual à do Figma: alarme, bluetooth, wi-fi, sinal e bateria */
+var SVG_ALARME =
+  '<svg class="si" viewBox="0 0 22 24" fill="none" stroke="currentColor" stroke-width="2" '+
+   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+
+    '<circle cx="11" cy="13.5" r="8"/>'+
+    '<path d="M3 5.5 6.2 2.6"/><path d="M19 5.5 15.8 2.6"/>'+
+    '<path d="M11 8.5v5l3.3 2.3"/></svg>';
+var SVG_BLUETOOTH =
+  '<svg class="si" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="2" '+
+   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+
+    '<path d="m1.5 6.5 11 11L7 23V1l5.5 5.5L1.5 17.5"/></svg>';
+var SVG_WIFI =
+  '<svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '+
+   'stroke-linecap="round" aria-hidden="true">'+
+    '<path d="M1.42 7.5a16 16 0 0 1 21.16 0"/>'+
+    '<path d="M5 11.05a11 11 0 0 1 14.08 0"/>'+
+    '<path d="M8.53 14.61a6 6 0 0 1 6.95 0"/>'+
+    '<circle cx="12" cy="18.4" r="1.15" fill="currentColor" stroke="none"/></svg>';
+var SVG_SINAL =
+  '<svg class="si" viewBox="0 0 20.5 24" fill="currentColor" aria-hidden="true">'+
+    '<rect x="0" y="16" width="3.6" height="5.5" rx="1.8"/>'+
+    '<rect x="5.6" y="12" width="3.6" height="9.5" rx="1.8"/>'+
+    '<rect x="11.2" y="7.5" width="3.6" height="14" rx="1.8"/>'+
+    '<rect x="16.8" y="3" width="3.6" height="18.5" rx="1.8"/></svg>';
+var SVG_BATERIA =
+  '<svg class="si" viewBox="0 0 30 24" fill="none" aria-hidden="true">'+
+    '<rect x="1" y="6" width="24" height="12" rx="3.5" stroke="currentColor" stroke-width="2"/>'+
+    '<rect x="26.4" y="9.8" width="2.4" height="4.4" rx="1.2" fill="currentColor"/>'+
+    '<rect x="5.2" y="9" width="3" height="6" rx="1.5" fill="currentColor"/>'+
+    '<rect x="10.2" y="9" width="3" height="6" rx="1.5" fill="currentColor"/>'+
+    '<rect x="15.2" y="9" width="3" height="6" rx="1.5" fill="currentColor"/></svg>';
+var ICONES_STATUS = SVG_ALARME + SVG_BLUETOOTH + SVG_WIFI + SVG_SINAL + SVG_BATERIA;
 function sysbar(light){
   return '<div class="sysbar'+(light?' light':'')+'"><span>16:53</span>'+
-   '<span class="ic">▮▮▮ ▲ ▮</span></div>';
+   '<span class="ic">'+ICONES_STATUS+'</span></div>';
 }
 function headerMarca(){
   return sysbar(true)+'<div class="hd plain">'+logoHTML()+'<div class="div"></div>'+

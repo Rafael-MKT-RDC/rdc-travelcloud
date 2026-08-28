@@ -535,7 +535,7 @@ function quebra(g, txt, larg){
 }
 
 /* ---- a tela do portal, desenhada do zero ---- */
-function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc){
+function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
   var t = derivar(cfg.cores.brand);
   var k = w / 368;                       /* a tela real tem 368 de largura */
   g.save();
@@ -548,9 +548,10 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc){
   g.font = '700 ' + (11.5*k) + 'px Inter, system-ui, sans-serif';
   g.textBaseline = 'middle';
   g.fillText('16:53', x + 16*k, y + hSis/2 + 2*k);
-  g.textAlign = 'right';
-  g.fillText('▮▮▮ ▲ ▮', x + w - 16*k, y + hSis/2 + 2*k);
-  g.textAlign = 'left';
+  if(sys){
+    var altIc = 12*k, largIc = altIc * (130.5/24);
+    g.drawImage(sys, x + w - 16*k - largIc, y + hSis/2 + 2*k - altIc/2, largIc, altIc);
+  }
 
   /* cabeçalho branco: logo | Viagens ......... avatar */
   var hCab = 54*k, yCab = y + hSis;
@@ -689,6 +690,32 @@ function aparelho(g, x, y, larguraTela, dentro){
   return { w: lw, h: lh };
 }
 
+/* ---- a mesma barra de status do protótipo, num SVG só ---- */
+var SVG_TIRA_STATUS =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="130.5" height="24" viewBox="0 0 130.5 24" '+
+   'fill="none" stroke="#171B21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+
+    '<g opacity="0.9">'+
+    '<g><circle cx="11" cy="13.5" r="8"/><path d="M3 5.5 6.2 2.6"/>'+
+      '<path d="M19 5.5 15.8 2.6"/><path d="M11 8.5v5l3.3 2.3"/></g>'+
+    '<g transform="translate(27 0)"><path d="m1.5 6.5 11 11L7 23V1l5.5 5.5L1.5 17.5"/></g>'+
+    '<g transform="translate(46 0)" stroke-linejoin="round">'+
+      '<path d="M1.42 7.5a16 16 0 0 1 21.16 0"/><path d="M5 11.05a11 11 0 0 1 14.08 0"/>'+
+      '<path d="M8.53 14.61a6 6 0 0 1 6.95 0"/>'+
+      '<circle cx="12" cy="18.4" r="1.15" fill="#171B21" stroke="none"/></g>'+
+    '<g transform="translate(75 0)" fill="#171B21" stroke="none">'+
+      '<rect x="0" y="16" width="3.6" height="5.5" rx="1.8"/>'+
+      '<rect x="5.6" y="12" width="3.6" height="9.5" rx="1.8"/>'+
+      '<rect x="11.2" y="7.5" width="3.6" height="14" rx="1.8"/>'+
+      '<rect x="16.8" y="3" width="3.6" height="18.5" rx="1.8"/></g>'+
+    '<g transform="translate(100.5 0)">'+
+      '<rect x="1" y="6" width="24" height="12" rx="3.5"/>'+
+      '<rect x="26.4" y="9.8" width="2.4" height="4.4" rx="1.2" fill="#171B21" stroke="none"/>'+
+      '<rect x="5.2" y="9" width="3" height="6" rx="1.5" fill="#171B21" stroke="none"/>'+
+      '<rect x="10.2" y="9" width="3" height="6" rx="1.5" fill="#171B21" stroke="none"/>'+
+      '<rect x="15.2" y="9" width="3" height="6" rx="1.5" fill="#171B21" stroke="none"/></g>'+
+    '</g></svg>';
+var MOCK_STATUS = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(SVG_TIRA_STATUS);
+
 /* ---- inclinação: gira em torno do próprio centro ---- */
 function cantos(x, y, w, h, ang){
   var cx = x + w/2, cy = y + h/2, co = Math.cos(ang), si = Math.sin(ang);
@@ -718,9 +745,10 @@ function montaMockup(cfg, escala, feito){
     carregaImagem(cfg.logo || null),
     carregaImagem(MOCK_HERO),
     carregaImagem(MOCK_RDC),
-    comApp ? carregaImagem(cfg.appProprio.imagem) : Promise.resolve(null)
+    comApp ? carregaImagem(cfg.appProprio.imagem) : Promise.resolve(null),
+    carregaImagem(MOCK_STATUS)
   ]).then(function(r){
-    var logo = r[0], hero = r[1], rdc = r[2], app = r[3];
+    var logo = r[0], hero = r[1], rdc = r[2], app = r[3], sys = r[4];
     var c = document.createElement('canvas');
     var g = c.getContext('2d');
     var larguraFrente = 300 * escala;
@@ -746,7 +774,7 @@ function montaMockup(cfg, escala, feito){
       /* primeiro o de trás: o portal padrão */
       inclinado(g, xFundo, yFundo, cheiaFundo, alturaFundo, angFundo, function(){
         aparelho(g, xFundo, yFundo, larguraFundo, function(x,y,w,h){
-          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc);
+          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys);
         });
       });
       /* por cima, a home do app do cliente */
@@ -760,7 +788,7 @@ function montaMockup(cfg, escala, feito){
       c.width  = Math.round(margem*2 + larguraFrente*1.07);
       c.height = Math.round(margem*2 + altura);
       aparelho(g, margem, margem, larguraFrente, function(x,y,w,h){
-        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc);
+        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys);
       });
     }
     feito(c, comApp && !!app);
@@ -784,9 +812,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=18">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=19">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=18"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=19"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
