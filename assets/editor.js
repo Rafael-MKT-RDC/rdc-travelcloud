@@ -689,6 +689,28 @@ function aparelho(g, x, y, larguraTela, dentro){
   return { w: lw, h: lh };
 }
 
+/* ---- inclinação: gira em torno do próprio centro ---- */
+function cantos(x, y, w, h, ang){
+  var cx = x + w/2, cy = y + h/2, co = Math.cos(ang), si = Math.sin(ang);
+  return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(function(v){
+    var dx = v[0]-cx, dy = v[1]-cy;
+    return [cx + dx*co - dy*si, cy + dx*si + dy*co];
+  });
+}
+function extremos(listas){
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  listas.forEach(function(l){ l.forEach(function(p){
+    if(p[0]<minX) minX=p[0]; if(p[0]>maxX) maxX=p[0];
+    if(p[1]<minY) minY=p[1]; if(p[1]>maxY) maxY=p[1];
+  }); });
+  return {minX:minX, minY:minY, maxX:maxX, maxY:maxY};
+}
+function inclinado(g, x, y, w, h, ang, desenha){
+  var cx = x + w/2, cy = y + h/2;
+  g.save(); g.translate(cx, cy); g.rotate(ang); g.translate(-cx, -cy);
+  desenha(); g.restore();
+}
+
 /* ---- monta a cena e devolve o canvas pronto ---- */
 function montaMockup(cfg, escala, feito){
   var comApp = !!(cfg.appProprio && cfg.appProprio.ativo && cfg.appProprio.imagem);
@@ -706,23 +728,32 @@ function montaMockup(cfg, escala, feito){
     var margem = 30 * escala;
 
     if(comApp && app){
-      /* o de trás fica embaixo e à esquerda, coberto só na beirada: quem
-         olha precisa reconhecer as duas telas de uma vez */
+      /* dois aparelhos levemente inclinados: o app do cliente na frente,
+         o portal padrão atrás, saindo pela esquerda */
       var cheiaFrente = larguraFrente * 1.07, cheiaFundo = larguraFundo * 1.07;
       var alturaFrente = larguraFrente * (814/368) * 1.07;
       var alturaFundo  = larguraFundo  * (814/368) * 1.07;
-      var sobra = cheiaFrente * 0.10;
-      var xFundo = margem, xFrente = margem + cheiaFundo - sobra;
-      var yFrente = margem, yFundo = margem + alturaFrente * 0.20;
-      c.width  = Math.round(xFrente + cheiaFrente + margem);
-      c.height = Math.round(Math.max(yFundo + alturaFundo, yFrente + alturaFrente) + margem);
-      /* primeiro o maior, a home do app do cliente */
-      aparelho(g, xFrente, yFrente, larguraFrente, function(x,y,w,h){
-        telaImagem(g, x, y, w, h, app);
+      var angFundo = -9 * Math.PI/180, angFrente = -4 * Math.PI/180;
+      var xFundo = 0, yFundo = alturaFrente * 0.17;
+      var xFrente = cheiaFundo * 0.86, yFrente = 0;
+      var caixa = extremos([
+        cantos(xFundo,  yFundo,  cheiaFundo,  alturaFundo,  angFundo),
+        cantos(xFrente, yFrente, cheiaFrente, alturaFrente, angFrente)
+      ]);
+      c.width  = Math.round(caixa.maxX - caixa.minX + margem*2);
+      c.height = Math.round(caixa.maxY - caixa.minY + margem*2);
+      g.translate(margem - caixa.minX, margem - caixa.minY);
+      /* primeiro o de trás: o portal padrão */
+      inclinado(g, xFundo, yFundo, cheiaFundo, alturaFundo, angFundo, function(){
+        aparelho(g, xFundo, yFundo, larguraFundo, function(x,y,w,h){
+          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc);
+        });
       });
-      /* por cima, menor e mais baixo, o portal padrão: aparece inteiro */
-      aparelho(g, xFundo, yFundo, larguraFundo, function(x,y,w,h){
-        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc);
+      /* por cima, a home do app do cliente */
+      inclinado(g, xFrente, yFrente, cheiaFrente, alturaFrente, angFrente, function(){
+        aparelho(g, xFrente, yFrente, larguraFrente, function(x,y,w,h){
+          telaImagem(g, x, y, w, h, app);
+        });
       });
     } else {
       var altura = larguraFrente * (814/368) * 1.07;
@@ -753,9 +784,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=17">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=18">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=17"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=18"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -1133,7 +1164,7 @@ function ligarEditor(){
         g.clearRect(0,0,c.width,c.height);
         g.drawImage(c, 0, 0);
         $('mockDica').textContent = doisAparelhos
-          ? 'Dois aparelhos: o portal com a marca na frente e a home do app do cliente atrás. PNG sem fundo, pronto para proposta, e-mail e apresentação.'
+          ? 'Dois aparelhos: a home do app do cliente na frente e o portal com a marca atrás. PNG sem fundo, pronto para proposta, e-mail e apresentação.'
           : 'O portal com a marca do cliente. PNG sem fundo, pronto para proposta, e-mail e apresentação.';
       });
     }, 250);
