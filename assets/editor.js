@@ -8,14 +8,57 @@ var CHAVE = 'tc_prototipos_v1';
 var app = document.getElementById('app');
 var lista = [], editando = null, rascunho = null;
 
-/* ---------- armazenamento ---------- */
+/* ---------- armazenamento ----------
+   No site publicado tudo vive no servidor: todo mundo que entra vê a mesma
+   lista. Sem servidor (pacote de visualização) cai no navegador. */
+var TEM_API = !window.TC_INLINE;
+var emailsAcesso = [];
+var sessao = { token:'', email:'' };
+try{
+  sessao.token = localStorage.getItem('tc_sessao') || '';
+  sessao.email = localStorage.getItem('tc_email') || '';
+}catch(e){}
+
+function guardarSessao(t, e){
+  sessao.token = t; sessao.email = e;
+  try{ localStorage.setItem('tc_sessao', t); localStorage.setItem('tc_email', e); }catch(x){}
+}
+function limparSessao(){
+  sessao = { token:'', email:'' };
+  try{ localStorage.removeItem('tc_sessao'); localStorage.removeItem('tc_email'); }catch(x){}
+}
+function pedir(caminho, opcoes){
+  opcoes = opcoes || {};
+  opcoes.headers = Object.assign({'content-type':'application/json'}, opcoes.headers||{},
+    sessao.token ? {authorization:'Bearer '+sessao.token} : {});
+  return fetch(caminho, opcoes).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(d){
+      if(!r.ok){ var err = new Error(d.erro || 'Falhou'); err.status = r.status; throw err; }
+      return d;
+    });
+  });
+}
 function carregar(){
-  try{ var b = localStorage.getItem(CHAVE); return b ? JSON.parse(b) : []; }
-  catch(e){ return []; }
+  if(!TEM_API){
+    try{ var b = localStorage.getItem(CHAVE); return Promise.resolve(b ? JSON.parse(b) : []); }
+    catch(e){ return Promise.resolve([]); }
+  }
+  return pedir('/api/dados').then(function(d){
+    emailsAcesso = d.emails || [];
+    return d.clientes || [];
+  });
 }
 function gravar(){
-  try{ localStorage.setItem(CHAVE, JSON.stringify(lista)); }
-  catch(e){ aviso('Não consegui gravar no navegador. O trabalho desta sessão continua, mas não será lembrado.','ruim'); }
+  if(!TEM_API){
+    try{ localStorage.setItem(CHAVE, JSON.stringify(lista)); }catch(e){}
+    return Promise.resolve();
+  }
+  return pedir('/api/dados', {method:'PUT', body: JSON.stringify({clientes: lista})})
+    .then(function(d){ emailsAcesso = d.emails || emailsAcesso; })
+    .catch(function(e){
+      alert('Não consegui salvar no servidor: ' + e.message);
+      throw e;
+    });
 }
 
 /* ---------- cores ---------- */
@@ -107,7 +150,14 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]});}
 function lerArquivo(f, feito){
   var fr = new FileReader();
-  fr.onload = function(){ feito(fr.result); };
+  fr.onload = function(){
+    var dados = fr.result;
+    if(!TEM_API) return feito(dados);
+    // sobe para o servidor: assim o logo aparece para todo mundo, não só aqui
+    pedir('/api/arquivo', {method:'POST', body: JSON.stringify({nome: f.name, dados: dados})})
+      .then(function(d){ feito(d.url); })
+      .catch(function(){ feito(dados); });   // deu ruim: segue embutido
+  };
   fr.readAsDataURL(f);
 }
 function aviso(txt, tipo){
@@ -186,11 +236,11 @@ function arquivoCliente(cfg){
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n'+
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
   '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n'+
-  '<link rel="stylesheet" href="../assets/tc.css?v=2">\n</head>\n<body>\n'+
+  '<link rel="stylesheet" href="../assets/tc.css?v=3">\n</head>\n<body>\n'+
   '<div class="phone"><div class="vp" id="vp"></div></div>\n\n'+
   '<!-- bloco gerado pelo editor -->\n<script>\nwindow.TC = {\n'+
   c.join(',\n')+',\n\n  cores: {\n'+cores.join(',\n')+'\n  },\n\n'+app+'\n};\n</'+'script>\n\n'+
-  '<script src="../assets/tc.js?v=2"></'+'script>\n</body>\n</html>\n';
+  '<script src="../assets/tc.js?v=3"></'+'script>\n</body>\n</html>\n';
 }
 function baixarDireto(nome, txt){
   try{
@@ -214,6 +264,93 @@ function salvarArquivo(nome, txt, feito){
         function(e){ feito(e && e.code==='declined' ? 'recusado' : 'falhou'); });
     }, direto);
   } else direto();
+}
+
+/* ============================================================
+   TELA 0 — ENTRAR
+   ============================================================ */
+function verLogin(recado){
+  app.innerHTML =
+   '<div class="portao"><div class="bloco">'+
+     '<h1 style="font-size:24px;margin-bottom:4px">Travel Cloud</h1>'+
+     '<p class="dica" style="margin-bottom:20px">Entre com o e-mail cadastrado para ver e editar os protótipos.</p>'+
+     '<div class="campo2"><label>E-mail</label>'+
+       '<input type="text" id="lgEmail" placeholder="nome@rdcviagens.com.br" value="'+esc(sessao.email||'')+'"></div>'+
+     '<div class="campo2"><label>Senha</label>'+
+       '<input type="password" id="lgSenha" placeholder="••••••••"></div>'+
+     '<div class="rodape-acoes" style="margin-top:4px">'+
+       '<button class="b forte" id="btEntrar">Entrar</button></div>'+
+     (recado ? '<div class="recado ruim" style="margin-top:14px">'+recado+'</div>' : '')+
+   '</div></div>';
+
+  function tentar(){
+    var email = document.getElementById('lgEmail').value.trim();
+    var senha = document.getElementById('lgSenha').value;
+    if(!email || !senha) return verLogin('Preencha e-mail e senha.');
+    document.getElementById('btEntrar').textContent = 'Entrando…';
+    fetch('/api/entrar', {method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({email:email, senha:senha})})
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(x){
+        if(!x.ok) return verLogin(esc(x.d.erro || 'Não consegui entrar.'));
+        guardarSessao(x.d.token, x.d.email);
+        iniciar();
+      })
+      .catch(function(){ verLogin('Servidor fora do ar. Tente de novo em instantes.'); });
+  }
+  document.getElementById('btEntrar').onclick = tentar;
+  app.querySelectorAll('#lgEmail,#lgSenha').forEach(function(i){
+    i.onkeydown = function(e){ if(e.key === 'Enter') tentar(); };
+  });
+}
+
+/* ============================================================
+   TELA 3 — QUEM PODE ENTRAR
+   ============================================================ */
+function verEmails(){
+  var linhas = emailsAcesso.map(function(e, i){
+    var eu = e === sessao.email;
+    return '<div class="fila"><span>'+esc(e)+(eu?' <span class="selo">você</span>':'')+'</span>'+
+      (eu ? '' : '<button class="b mini perigo" data-tira="'+i+'">Remover</button>')+'</div>';
+  }).join('');
+  app.innerHTML =
+   '<div class="topo"><div><h1>Quem pode entrar</h1>'+
+     '<p class="sub">Só estes e-mails conseguem abrir o editor. A senha é a mesma para todos.</p></div>'+
+     '<button class="b" id="btVoltar">← Voltar</button></div>'+
+   '<div class="bloco" style="max-width:620px">'+
+     '<h2>E-mails cadastrados</h2><p class="dica">Você não pode remover o seu próprio acesso.</p>'+
+     '<div id="filas">'+linhas+'</div>'+
+     '<div class="juntos" style="margin-top:16px">'+
+       '<input type="text" id="novoEmail" placeholder="nome@rdcviagens.com.br">'+
+       '<button class="b forte" id="btAddEmail">Cadastrar</button></div>'+
+     '<div id="recadoEmail" class="recado info esconde"></div>'+
+   '</div>';
+
+  function salvarEmails(novos){
+    return pedir('/api/dados', {method:'PUT', body: JSON.stringify({emails: novos})})
+      .then(function(d){ emailsAcesso = d.emails || novos; verEmails(); })
+      .catch(function(e){ recado(e.message, 'ruim'); });
+  }
+  function recado(t, tipo){
+    var el = document.getElementById('recadoEmail');
+    el.className = 'recado ' + (tipo||'info'); el.textContent = t; el.classList.remove('esconde');
+  }
+  document.getElementById('btVoltar').onclick = verGaleria;
+  document.getElementById('btAddEmail').onclick = function(){
+    var v = document.getElementById('novoEmail').value.trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return recado('Esse e-mail não parece válido.','ruim');
+    if(emailsAcesso.indexOf(v) >= 0) return recado('Esse e-mail já tem acesso.','info');
+    salvarEmails(emailsAcesso.concat([v]));
+  };
+  document.getElementById('novoEmail').onkeydown = function(e){
+    if(e.key === 'Enter') document.getElementById('btAddEmail').click();
+  };
+  app.querySelectorAll('[data-tira]').forEach(function(b){
+    b.onclick = function(){
+      var i = +b.dataset.tira;
+      salvarEmails(emailsAcesso.filter(function(_, k){ return k !== i; }));
+    };
+  });
 }
 
 /* ============================================================
@@ -250,12 +387,21 @@ function verGaleria(){
    '<div class="topo"><div><h1>Protótipos por cliente</h1>'+
      '<p class="sub">Cada protótipo vira um link com a marca do cliente. Crie um novo, ajuste a qualquer momento '+
      'e gere o arquivo para publicar.</p></div>'+
-     '<button class="b forte" id="btNovo">+ Novo protótipo</button></div>'+
+     '<div class="rodape-acoes">'+
+       (TEM_API ? '<button class="b" id="btEmails">Quem pode entrar</button>'+
+                  '<button class="b" id="btSair">Sair</button>' : '')+
+       '<button class="b forte" id="btNovo">+ Novo protótipo</button></div></div>'+
    (lista.length
      ? '<div class="grade">'+cartoes+'</div>'
-     : '<div class="vazio">Nenhum protótipo ainda.<br>Comece pelo <b>+ Novo protótipo</b> — leva menos de um minuto.</div>');
+     : '<div class="vazio">Nenhum protótipo ainda.<br>Comece pelo <b>+ Novo protótipo</b> — leva menos de um minuto.</div>')+
+   (TEM_API ? '<p class="assinado">Você entrou como <b>'+esc(sessao.email)+'</b>. '+
+      'Tudo o que você salvar aqui aparece para todo mundo do time.</p>' : '');
 
   document.getElementById('btNovo').onclick = function(){ verEditor(novoModelo(), null); };
+  if(document.getElementById('btEmails')) document.getElementById('btEmails').onclick = verEmails;
+  if(document.getElementById('btSair')) document.getElementById('btSair').onclick = function(){
+    limparSessao(); lista = []; verLogin();
+  };
   app.querySelectorAll('[data-editar]').forEach(function(b){
     b.onclick = function(){ var i=+b.dataset.editar; verEditor(JSON.parse(JSON.stringify(lista[i])), i); };
   });
@@ -266,13 +412,13 @@ function verGaleria(){
     b.onclick = function(){
       var c = JSON.parse(JSON.stringify(lista[+b.dataset.copiar]));
       c.cliente += ' (cópia)'; c.slug = apelido(c.cliente);
-      lista.push(c); gravar(); verGaleria();
+      lista.push(c); gravar().then(verGaleria, verGaleria);
     };
   });
   app.querySelectorAll('[data-excluir]').forEach(function(b){
     b.onclick = function(){
       var i = +b.dataset.excluir;
-      if(b.dataset.confirmando){ lista.splice(i,1); gravar(); verGaleria(); return; }
+      if(b.dataset.confirmando){ lista.splice(i,1); gravar().then(verGaleria, verGaleria); return; }
       b.dataset.confirmando = '1'; b.textContent = 'Confirmar exclusão';
       setTimeout(function(){ if(b.isConnected){ delete b.dataset.confirmando; b.textContent='Excluir'; } }, 4000);
     };
@@ -535,7 +681,8 @@ function ligarEditor(){
     var conflito = lista.some(function(p,i){ return p.slug===rascunho.slug && i!==editando; });
     if(conflito){ aviso2('Já existe um protótipo com o link <code>/'+esc(rascunho.slug)+'</code>. Mude o link.','ruim'); return; }
     if(editando===null) lista.push(rascunho); else lista[editando] = rascunho;
-    gravar(); verGaleria();
+    aviso2('Salvando…','info');
+    gravar().then(verGaleria, function(){ aviso2('Não consegui salvar. Confira a conexão e tente de novo.','ruim'); });
   };
   $('btArquivo').onclick = function(){
     var pasta = rascunho.slug || 'cliente';
@@ -557,7 +704,7 @@ function ligarEditor(){
     } else mostrarCodigo(txt);
   };
   if($('btApagar')) $('btApagar').onclick = function(){
-    if(this.dataset.c){ lista.splice(editando,1); gravar(); verGaleria(); return; }
+    if(this.dataset.c){ lista.splice(editando,1); gravar().then(verGaleria, verGaleria); return; }
     this.dataset.c='1'; this.textContent='Confirmar exclusão';
   };
 
@@ -613,11 +760,20 @@ function sementes(){
 }
 
 /* ---------- início ---------- */
-lista = carregar();
-if(!lista.length && !localStorage.getItem(CHAVE+'_semeado')){
-  lista = sementes();
-  try{ localStorage.setItem(CHAVE+'_semeado','1'); }catch(e){}
-  gravar();
+function iniciar(){
+  if(TEM_API && !sessao.token) return verLogin();
+  app.innerHTML = '<div class="carregando">Carregando…</div>';
+  carregar().then(function(l){
+    lista = l;
+    if(!lista.length){            // primeira vez: já entra com o que está no ar
+      lista = sementes();
+      return gravar().then(verGaleria, verGaleria);
+    }
+    verGaleria();
+  }).catch(function(e){
+    if(e && e.status === 401){ limparSessao(); return verLogin('Sua sessão expirou. Entre de novo.'); }
+    verLogin('Não consegui falar com o servidor. Tente de novo.');
+  });
 }
-verGaleria();
+iniciar();
 })();

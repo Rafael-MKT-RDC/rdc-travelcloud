@@ -139,3 +139,15 @@ h1{font-family:var(--ff-d);font-size:clamp(23px,3vw,30px);margin:0;letter-spacin
 code{background:var(--panel-2);border-radius:5px;padding:2px 6px;font-size:12.5px}
 .selo.ar{background:#E7F0FF;color:#0A46A8}
 .proto .capa img{max-height:44px}
+
+/* --- portão de entrada --- */
+.portao{max-width:420px;margin:8vh auto 0}
+.portao .bloco{padding:28px 26px 26px}
+.portao h1{font-family:var(--ff-d);letter-spacing:-.6px}
+.carregando{padding:60px 0;text-align:center;color:var(--ink-3);font-size:14.5px}
+.assinado{margin-top:26px;font-size:12.5px;color:var(--ink-3);line-height:1.6}
+.assinado b{color:var(--ink-2)}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 0;border-top:1px solid var(--line-2);font-size:14px}
+.fila:first-child{border-top:0}
+.fila .selo{margin-left:6px}
