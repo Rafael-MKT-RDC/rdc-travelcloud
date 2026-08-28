@@ -485,7 +485,8 @@ function headerMarca(){
   return sysbar(true)+'<div class="hd plain">'+logoHTML()+'<div class="div"></div>'+
    '<div class="rot">'+esc(C.rotulo)+'</div>'+
    '<div class="hd-right">'+
-     (C.prime? '<span class="badge-prime">'+LOGO_PRIME+'</span>' : '')+
+     /* o selo do Prime saiu do topo: ele continua onde vende — na oferta,
+        no resumo e na conclusão */
      '<span class="avatar">'+I.user+'</span>'+
    '</div></div>';
 }
