@@ -64,6 +64,16 @@ const CLIENTES_PADRAO = [
     cores: { brand: '#00A859' }, appProprio: { ativo: false } }
 ];
 
+/* Cada leitura do estado gastava uma "advanced operation" do Blob (o list).
+   Com a página do cliente sendo montada no servidor, isso multiplicava por
+   visita. O cache abaixo vive na instância da função e segura o resultado por
+   um tempo curto — o suficiente para uma apresentação inteira caber em uma
+   leitura só, sem deixar o editor desatualizado. */
+const TTL_MS = 60 * 1000;
+let cache = { quando: 0, dados: null };
+
+export function limparCache() { cache = { quando: 0, dados: null }; }
+
 function reserva(motivo) {
   return {
     emails: EMAILS_PADRAO, senhaHash: sha(SENHA_PADRAO),
@@ -71,7 +81,8 @@ function reserva(motivo) {
   };
 }
 
-export async function lerEstado() {
+export async function lerEstado(semCache) {
+  if (!semCache && cache.dados && (Date.now() - cache.quando) < TTL_MS) return cache.dados;
   let blobs;
   try {
     ({ blobs } = await list({ prefix: PREFIXO, limit: 20 }));
@@ -91,11 +102,13 @@ export async function lerEstado() {
     // armazenamento fora do ar: modo somente leitura, com os protótipos conhecidos
     return reserva((e && e.message) || 'leitura indisponível');
   }
-  return {
+  const estado = {
     emails: Array.isArray(d.emails) && d.emails.length ? d.emails : EMAILS_PADRAO,
     senhaHash: d.senhaHash || sha(SENHA_PADRAO),
     clientes: Array.isArray(d.clientes) ? d.clientes : []
   };
+  cache = { quando: Date.now(), dados: estado };
+  return estado;
 }
 
 export async function gravarEstado(estado) {
@@ -116,5 +129,7 @@ export async function gravarEstado(estado) {
     const { del } = await import('@vercel/blob');
     await del(velhos.map(b => b.url)).catch(() => {});
   }
+  cache = { quando: Date.now(), dados: {
+    emails: limpo.emails, senhaHash: limpo.senhaHash, clientes: limpo.clientes } };
   return limpo;
 }

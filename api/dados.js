@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   if (!quem) return res.status(401).json({ erro: 'Faça login para continuar.' });
 
   try {
-    const estado = await lerEstado();
+    const estado = await lerEstado(req.method === 'PUT');
     delete estado.novo;
 
     if (req.method === 'GET') {
