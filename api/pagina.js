@@ -3,7 +3,7 @@
    protótipo é salvo no editor — sem gerar arquivo nenhum à mão. */
 import { lerEstado } from './_estado.js';
 
-const V = '16';
+const V = '17';
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => (

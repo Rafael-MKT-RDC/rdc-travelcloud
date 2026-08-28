@@ -495,6 +495,247 @@ function qrBaixaSVG(texto, nome){
   setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
 }
 
+/* ============================================================
+   Mockup: a imagem pronta para colocar em proposta e apresentação.
+   Com app próprio, saem dois aparelhos — a home do cliente na frente e
+   o portal atrás. Sem app próprio, sai só o portal.
+   ============================================================ */
+var MOCK_HERO = '/assets/img/hero-home.jpg';
+var MOCK_RDC  = '/assets/img/rdc.svg';
+
+function carregaImagem(src){
+  return new Promise(function(ok){
+    if(!src){ ok(null); return; }
+    var im = new Image();
+    if(!/^data:/.test(src)) im.crossOrigin = 'anonymous';
+    im.onload = function(){ ok(im); };
+    im.onerror = function(){ ok(null); };
+    im.src = src;
+  });
+}
+function caminhoArredondado(g, x, y, w, h, r){
+  g.beginPath();
+  g.moveTo(x+r, y);
+  g.arcTo(x+w, y,   x+w, y+h, r);
+  g.arcTo(x+w, y+h, x,   y+h, r);
+  g.arcTo(x,   y+h, x,   y,   r);
+  g.arcTo(x,   y,   x+w, y,   r);
+  g.closePath();
+}
+/* quebra o texto na largura disponível e devolve as linhas */
+function quebra(g, txt, larg){
+  var palavras = txt.split(' '), linhas = [], atual = '';
+  for(var i=0;i<palavras.length;i++){
+    var teste = atual ? atual + ' ' + palavras[i] : palavras[i];
+    if(g.measureText(teste).width > larg && atual){ linhas.push(atual); atual = palavras[i]; }
+    else atual = teste;
+  }
+  if(atual) linhas.push(atual);
+  return linhas;
+}
+
+/* ---- a tela do portal, desenhada do zero ---- */
+function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc){
+  var t = derivar(cfg.cores.brand);
+  var k = w / 368;                       /* a tela real tem 368 de largura */
+  g.save();
+  caminhoArredondado(g, x, y, w, h, 30*k); g.clip();
+  g.fillStyle = '#FFFFFF'; g.fillRect(x, y, w, h);
+
+  /* barra do sistema */
+  var hSis = 28*k;
+  g.fillStyle = '#171B21';
+  g.font = '700 ' + (11.5*k) + 'px Inter, system-ui, sans-serif';
+  g.textBaseline = 'middle';
+  g.fillText('16:53', x + 16*k, y + hSis/2 + 2*k);
+  g.textAlign = 'right';
+  g.fillText('▮▮▮ ▲ ▮', x + w - 16*k, y + hSis/2 + 2*k);
+  g.textAlign = 'left';
+
+  /* cabeçalho branco: logo | Viagens ......... avatar */
+  var hCab = 54*k, yCab = y + hSis;
+  g.fillStyle = '#FFFFFF'; g.fillRect(x, yCab, w, hCab);
+  g.strokeStyle = '#E9EDF2'; g.lineWidth = 1*k;
+  g.beginPath(); g.moveTo(x, yCab+hCab); g.lineTo(x+w, yCab+hCab); g.stroke();
+
+  var cx = x + 16*k, meio = yCab + hCab/2;
+  if(logo){
+    var alt = 26*k, larg = Math.min(104*k, logo.width * (alt/logo.height));
+    g.drawImage(logo, cx, meio - alt/2, larg, alt);
+    cx += larg + 12*k;
+  } else {
+    /* o padrão RDC mostra o espaço reservado do logo */
+    var lw = 52*k, lh = 26*k;
+    g.strokeStyle = cfg.cores.brand; g.lineWidth = 1.5*k;
+    caminhoArredondado(g, cx, meio-lh/2, lw, lh, 7*k); g.stroke();
+    g.fillStyle = cfg.cores.brand;
+    g.font = '700 ' + (7*k) + 'px Inter, sans-serif';
+    g.textAlign = 'center';
+    g.fillText('seu logo aqui', cx + lw/2, meio);
+    g.textAlign = 'left';
+    cx += lw + 12*k;
+  }
+  g.fillStyle = '#E9EDF2';
+  g.fillRect(cx, meio - 11*k, 1*k, 22*k);
+  cx += 12*k;
+  g.fillStyle = cfg.cores.brand;
+  g.font = '600 ' + (16.5*k) + 'px Inter, system-ui, sans-serif';
+  g.fillText(cfg.rotulo || 'Viagens', cx, meio + 1*k);
+
+  var raio = 14.5*k, ax = x + w - 16*k - raio;
+  g.fillStyle = '#F5F7FA'; g.beginPath(); g.arc(ax, meio, raio, 0, 7); g.fill();
+  g.strokeStyle = '#E9EDF2'; g.lineWidth = 1*k; g.stroke();
+  g.strokeStyle = '#626C78'; g.lineWidth = 1.6*k;
+  g.beginPath(); g.arc(ax, meio - 3*k, 4.2*k, 0, 7); g.stroke();
+  g.beginPath(); g.arc(ax, meio + 9*k, 8*k, Math.PI*1.15, Math.PI*1.85); g.stroke();
+
+  /* faixa da marca com a busca */
+  var yBusca = yCab + hCab, hBusca = 70*k;
+  g.fillStyle = cfg.cores.brand; g.fillRect(x, yBusca, w, hBusca);
+  var px = x + 16*k, pw = w - 32*k, ph = 46*k, py = yBusca + (hBusca - ph)/2;
+  g.fillStyle = '#FFFFFF'; caminhoArredondado(g, px, py, pw, ph, ph/2); g.fill();
+  g.strokeStyle = '#8B95A2'; g.lineWidth = 2*k;
+  g.beginPath(); g.arc(px + 26*k, py + ph/2, 7*k, 0, 7); g.stroke();
+  g.beginPath(); g.moveTo(px + 31*k, py + ph/2 + 5*k); g.lineTo(px + 36*k, py + ph/2 + 10*k); g.stroke();
+  g.fillStyle = '#8B95A2';
+  g.font = '500 ' + (13.5*k) + 'px Inter, system-ui, sans-serif';
+  g.fillText('Buscar Hospedagens', px + 48*k, py + ph/2 + 1*k);
+
+  /* foto com a chamada */
+  var yFoto = yBusca + hBusca, hRodape = 86*k;
+  var hFoto = (y + h) - yFoto - hRodape;
+  if(hero){
+    var escala = Math.max(w / hero.width, hFoto / hero.height);
+    var lw2 = hero.width*escala, lh2 = hero.height*escala;
+    g.drawImage(hero, x + (w-lw2)/2, yFoto + (hFoto-lh2)/2, lw2, lh2);
+  } else {
+    g.fillStyle = '#DDE3EA'; g.fillRect(x, yFoto, w, hFoto);
+  }
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 14*k; g.shadowOffsetY = 2*k;
+  var tx = x + 40*k, ty = yFoto + 30*k, tw = w - 62*k;
+  g.fillStyle = '#FFFFFF';
+  g.font = '700 ' + (19*k) + 'px Inter, system-ui, sans-serif';
+  var linhas = quebra(g, 'Há viagens que levam a novos lugares.', tw)
+        .concat(quebra(g, 'E há viagens que ficam com a gente para sempre.', tw));
+  var lh3 = 25*k;
+  linhas.forEach(function(l, i){ g.fillText(l, tx, ty + i*lh3 + lh3/2); });
+  var yFim = ty + linhas.length*lh3;
+  g.font = '400 ' + (12.5*k) + 'px Inter, system-ui, sans-serif';
+  g.globalAlpha = .92;
+  quebra(g, 'Escolha o destino da próxima história que você quer viver.', tw)
+    .forEach(function(l, i){ g.fillText(l, tx, yFim + 6*k + i*16*k + 8*k); });
+  g.globalAlpha = 1;
+  g.restore();
+  /* tarja da marca */
+  g.fillStyle = cfg.cores.brand;
+  caminhoArredondado(g, x + 22*k, ty + 4*k, 6*k, 64*k, 4*k); g.fill();
+
+  /* rodapé */
+  var yR = y + h - hRodape;
+  g.fillStyle = '#F5F7FA'; g.fillRect(x, yR, w, hRodape);
+  g.strokeStyle = '#E9EDF2'; g.lineWidth = 1*k;
+  g.beginPath(); g.moveTo(x, yR); g.lineTo(x+w, yR); g.stroke();
+  g.fillStyle = '#8B95A2';
+  g.font = '400 ' + (10.5*k) + 'px Inter, system-ui, sans-serif';
+  g.fillText('© 2026 RDC Viagens.', x + 16*k, yR + 20*k);
+  g.fillText('Todos os direitos reservados.', x + 16*k, yR + 34*k);
+  g.fillStyle = '#626C78';
+  g.font = '400 ' + (10.5*k) + 'px Inter, system-ui, sans-serif';
+  g.fillText('Política de Privacidade', x + 16*k, yR + 58*k);
+  g.textAlign = 'right';
+  g.fillStyle = '#8B95A2';
+  g.fillText('Tecnologia e operação', x + w - 16*k, yR + 20*k);
+  g.fillText('turística por', x + w - 16*k, yR + 34*k);
+  if(rdc){
+    var rh = 26*k, rw = rdc.width * (rh/rdc.height);
+    g.drawImage(rdc, x + w - 16*k - rw, yR + 42*k, rw, rh);
+  }
+  g.textAlign = 'left';
+  g.restore();
+}
+
+/* ---- a tela do app do cliente: é só a imagem enviada ---- */
+function telaImagem(g, x, y, w, h, im){
+  g.save();
+  caminhoArredondado(g, x, y, w, h, 30*(w/368)); g.clip();
+  g.fillStyle = '#0E1A2B'; g.fillRect(x, y, w, h);
+  if(im){
+    var e = Math.max(w/im.width, h/im.height);
+    g.drawImage(im, x + (w - im.width*e)/2, y, im.width*e, im.height*e);
+  }
+  g.restore();
+}
+
+/* ---- a moldura do aparelho ---- */
+function aparelho(g, x, y, larguraTela, dentro){
+  var alturaTela = larguraTela * (814/368);
+  var borda = larguraTela * 0.035;
+  var lw = larguraTela + borda*2, lh = alturaTela + borda*2;
+  g.save();
+  g.shadowColor = 'rgba(14,26,43,.30)';
+  g.shadowBlur = larguraTela*0.16; g.shadowOffsetY = larguraTela*0.05;
+  g.fillStyle = '#0E1A2B';
+  caminhoArredondado(g, x, y, lw, lh, larguraTela*0.115); g.fill();
+  g.restore();
+  g.strokeStyle = '#223247'; g.lineWidth = Math.max(1, larguraTela*0.006);
+  caminhoArredondado(g, x, y, lw, lh, larguraTela*0.115); g.stroke();
+  dentro(x + borda, y + borda, larguraTela, alturaTela);
+  /* alto-falante */
+  g.fillStyle = '#243449';
+  caminhoArredondado(g, x + lw/2 - larguraTela*0.16, y + borda*0.55,
+                     larguraTela*0.32, Math.max(2, larguraTela*0.014), larguraTela*0.01);
+  g.fill();
+  return { w: lw, h: lh };
+}
+
+/* ---- monta a cena e devolve o canvas pronto ---- */
+function montaMockup(cfg, escala, feito){
+  var comApp = !!(cfg.appProprio && cfg.appProprio.ativo && cfg.appProprio.imagem);
+  Promise.all([
+    carregaImagem(cfg.logo || null),
+    carregaImagem(MOCK_HERO),
+    carregaImagem(MOCK_RDC),
+    comApp ? carregaImagem(cfg.appProprio.imagem) : Promise.resolve(null)
+  ]).then(function(r){
+    var logo = r[0], hero = r[1], rdc = r[2], app = r[3];
+    var c = document.createElement('canvas');
+    var g = c.getContext('2d');
+    var larguraFrente = 300 * escala;
+    var larguraFundo  = 232 * escala;
+    var margem = 30 * escala;
+
+    if(comApp && app){
+      /* o de trás fica embaixo e à esquerda, coberto só na beirada: quem
+         olha precisa reconhecer as duas telas de uma vez */
+      var cheiaFrente = larguraFrente * 1.07, cheiaFundo = larguraFundo * 1.07;
+      var alturaFrente = larguraFrente * (814/368) * 1.07;
+      var alturaFundo  = larguraFundo  * (814/368) * 1.07;
+      var sobra = cheiaFrente * 0.10;
+      var xFundo = margem, xFrente = margem + cheiaFundo - sobra;
+      var yFrente = margem, yFundo = margem + alturaFrente * 0.20;
+      c.width  = Math.round(xFrente + cheiaFrente + margem);
+      c.height = Math.round(Math.max(yFundo + alturaFundo, yFrente + alturaFrente) + margem);
+      /* primeiro o maior, a home do app do cliente */
+      aparelho(g, xFrente, yFrente, larguraFrente, function(x,y,w,h){
+        telaImagem(g, x, y, w, h, app);
+      });
+      /* por cima, menor e mais baixo, o portal padrão: aparece inteiro */
+      aparelho(g, xFundo, yFundo, larguraFundo, function(x,y,w,h){
+        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc);
+      });
+    } else {
+      var altura = larguraFrente * (814/368) * 1.07;
+      c.width  = Math.round(margem*2 + larguraFrente*1.07);
+      c.height = Math.round(margem*2 + altura);
+      aparelho(g, margem, margem, larguraFrente, function(x,y,w,h){
+        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc);
+      });
+    }
+    feito(c, comApp && !!app);
+  });
+}
+
 /* ---------- documento da prévia ---------- */
 function montarDoc(cfg){
   var tc = {
@@ -512,9 +753,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=16">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=17">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=16"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=17"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -813,6 +1054,18 @@ function verEditor(cfg, idx){
       '</div>'+
     '</div></div>'+
 
+  '<div class="bloco"><h2>Imagem do protótipo</h2>'+
+    '<p class="dica" id="mockDica">Aparelho montado com a marca do cliente, pronto para '+
+    'proposta, e-mail e apresentação.</p>'+
+    '<div class="mock-linha">'+
+      '<div class="mock-caixa"><canvas id="mockTela"></canvas></div>'+
+      '<div class="mock-lado">'+
+        '<div class="rodape-acoes"><button class="b" id="btMockPng">Baixar PNG</button></div>'+
+        '<p class="dica" style="margin:0">Fundo transparente, em tamanho grande — dá para '+
+        'colocar em cima de qualquer cor de slide.</p>'+
+      '</div>'+
+    '</div></div>'+
+
   '<div class="bloco"><h2>Publicar</h2>'+
     '<p class="dica">É só salvar: o link entra no ar na hora, em '+
       '<code>'+esc(SITE)+'/<span id="vSlug2">'+esc(cfg.slug||'cliente')+'</span></code>.</p>'+
@@ -851,7 +1104,7 @@ function ligarEditor(){
     rascunho.cores.brand = c;
     $('fCorPicker').value = c;
     if(origem!=='campo') $('fCor').value = c;
-    repintarTons(); atualizarPrevia(); return true;
+    repintarTons(); atualizarPrevia(); pintaMock(); return true;
   }
 
   $('btVoltar').onclick = verGaleria;
@@ -867,6 +1120,33 @@ function ligarEditor(){
   }
   pintaQR();
   $('btQrPng').onclick = function(){ qrBaixaPNG(linkAtual(), 'qr-' + (rascunho.slug||'cliente')); };
+
+  /* --- imagem do protótipo, com um ou dois aparelhos --- */
+  var mockPendente = null;
+  function pintaMock(){
+    var alvo = $('mockTela'); if(!alvo) return;
+    clearTimeout(mockPendente);
+    mockPendente = setTimeout(function(){
+      montaMockup(rascunho, 1, function(c, doisAparelhos){
+        var g = alvo.getContext('2d');
+        alvo.width = c.width; alvo.height = c.height;
+        g.clearRect(0,0,c.width,c.height);
+        g.drawImage(c, 0, 0);
+        $('mockDica').textContent = doisAparelhos
+          ? 'Dois aparelhos: o portal com a marca na frente e a home do app do cliente atrás. PNG sem fundo, pronto para proposta, e-mail e apresentação.'
+          : 'O portal com a marca do cliente. PNG sem fundo, pronto para proposta, e-mail e apresentação.';
+      });
+    }, 250);
+  }
+  pintaMock();
+  $('btMockPng').onclick = function(){
+    var bt = this, antes = bt.textContent;
+    bt.textContent = 'Gerando…'; bt.disabled = true;
+    montaMockup(rascunho, 2.4, function(c){          /* o dobro e meio, para impresso */
+      baixa('mockup-' + (rascunho.slug || 'cliente') + '.png', c.toDataURL('image/png'));
+      bt.textContent = antes; bt.disabled = false;
+    });
+  };
   $('btQrSvg').onclick = function(){ qrBaixaSVG(linkAtual(), 'qr-' + (rascunho.slug||'cliente')); };
 
   $('fNome').oninput = function(){
@@ -881,7 +1161,7 @@ function ligarEditor(){
     $('vSlug').textContent = rascunho.slug||'cliente'; $('vSlug2').textContent = rascunho.slug||'cliente';
     pintaQR();
   };
-  $('fRotulo').oninput = function(){ rascunho.rotulo = this.value; atualizarPrevia(); };
+  $('fRotulo').oninput = function(){ rascunho.rotulo = this.value; atualizarPrevia(); pintaMock(); };
 
   $('fCor').oninput  = function(){ aplicarCor(this.value,'digitando'); };
   $('fCor').onchange = function(){ aplicarCor(this.value,'campo'); };
@@ -921,6 +1201,7 @@ function ligarEditor(){
     $('imgLogo').src = url; $('previaLogo').classList.remove('esconde');
     atualizarPrevia();
     pintaCoresDoLogo(url);
+    pintaMock();
   }
   /* As cores que existem dentro do logo, para escolher com um clique —
      o mesmo caminho de quem busca pelo site, só que com o arquivo. */
@@ -966,6 +1247,7 @@ function ligarEditor(){
   if(rascunho.logo) pintaCoresDoLogo(rascunho.logo);
   $('btTiraLogo').onclick = function(){
     rascunho.logo = null; $('previaLogo').classList.add('esconde'); $('coresLogo').innerHTML='';
+    pintaMock();
     atualizarPrevia();
   };
 
@@ -974,14 +1256,14 @@ function ligarEditor(){
     rascunho.appProprio.ativo = !rascunho.appProprio.ativo;
     this.classList.toggle('on', rascunho.appProprio.ativo);
     $('areaApp').classList.toggle('esconde', !rascunho.appProprio.ativo);
-    atualizarPrevia();
+    atualizarPrevia(); pintaMock();
   };
   ligarSolta($('zonaApp'), $('fApp'), function(url){
     rascunho.appProprio.imagem = url;
     $('imgApp').src = url;
     $('mapa').classList.remove('esconde');
     $('areaApp').classList.add('com-imagem');
-    desenharAlvo(); atualizarPrevia();
+    desenharAlvo(); atualizarPrevia(); pintaMock();
   });
   $('btTiraApp').onclick = function(){
     rascunho.appProprio.imagem = '';
@@ -989,7 +1271,7 @@ function ligarEditor(){
     $('mapa').classList.add('esconde');
     $('areaApp').classList.remove('com-imagem');
     $('fApp').value = '';
-    atualizarPrevia();
+    atualizarPrevia(); pintaMock();
   };
   function desenharAlvo(){
     var h = rascunho.appProprio.hotspot, a = $('alvo');

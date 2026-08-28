@@ -276,3 +276,19 @@ code{background:var(--panel-2);border-radius:5px;padding:2px 6px;font-size:12.5p
 @media (max-width:640px){
   .cores-grade{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
 }
+
+/* --- imagem do protótipo (mockup) --- */
+.mock-linha{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.mock-caixa{border:1px solid var(--line);border-radius:14px;
+  padding:14px;flex:0 0 auto;line-height:0;background-color:#fff;
+  background-image:linear-gradient(45deg,#E9EEF5 25%,transparent 25%,transparent 75%,#E9EEF5 75%),
+                   linear-gradient(45deg,#E9EEF5 25%,transparent 25%,transparent 75%,#E9EEF5 75%);
+  background-size:16px 16px;background-position:0 0,8px 8px}
+.mock-caixa canvas{display:block;max-width:300px;height:auto}
+.mock-lado{flex:1 1 220px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.mock-lado .rodape-acoes{margin-top:0}
+@media (max-width:640px){
+  .mock-caixa{margin:0 auto}
+  .mock-caixa canvas{max-width:220px}
+  .mock-lado{flex:1 1 100%}
+}
