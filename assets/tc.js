@@ -1009,7 +1009,12 @@ function go(id){
   if(document.querySelector('.fixcta.on')) s.classList.add('with-cta');
   if(document.querySelector('.fixbar.on')) s.classList.add('with-bar');
   s.scrollTop=0;
-  if(id==='destino'){ var q=document.getElementById('qDest'); listaDestinos(q.value); setTimeout(function(){q.focus();q.select()},60); }
+  if(id==='destino'){
+    var q=document.getElementById('qDest'); listaDestinos(q.value);
+    // no celular o teclado não sobe sozinho: atrapalha ver as últimas pesquisas
+    var dedo = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+    if(!dedo) setTimeout(function(){q.focus();q.select()},60);
+  }
   window.scrollTo(0,0);
 }
 window.TC_GO=go;
@@ -1212,12 +1217,38 @@ function bind(){
   });
 }
 
+/* ---------- 11-B. ESCALA DA MOLDURA ----------
+   No desktop a moldura tem 392x838 FIXOS. Quando a janela diminui, a moldura
+   inteira é reduzida na proporção (largura e altura juntas) — nunca achata.
+   Em celular de verdade (<520px) não há moldura: o app ocupa a tela toda. */
+var LARG_MOLDURA = 392, ALT_MOLDURA = 838;
+function escalar(){
+  var r = document.documentElement;
+  if(window.innerWidth < 520){ r.style.removeProperty('--k'); return; }
+  var folgaX = window.innerWidth  < 760 ? 16 : 48;
+  var folgaY = window.innerHeight < 700 ? 12 : 36;
+  var k = Math.min(1,
+            (window.innerWidth  - folgaX) / LARG_MOLDURA,
+            (window.innerHeight - folgaY) / ALT_MOLDURA);
+  if(k < .3) k = .3;
+  r.style.setProperty('--k', String(Math.round(k*1000)/1000));
+}
+var escTimer = null;
+function escalarBrando(){
+  if(escTimer) cancelAnimationFrame(escTimer);
+  escTimer = requestAnimationFrame(escalar);
+}
+escalar();
+window.addEventListener('resize', escalarBrando);
+window.addEventListener('orientationchange', function(){ setTimeout(escalar,180); });
+
 /* ---------- 12. INÍCIO ---------- */
 function init(){
   vp=document.getElementById('vp');
   modal=document.createElement('div'); modal.className='modal'; modal.id='modal';
   vp.parentNode.appendChild(modal);
   bind();
+  escalar();
   var inicial = (C.appProprio&&C.appProprio.ativo) ? 'appcliente' : 'home';
   go(inicial);
 }

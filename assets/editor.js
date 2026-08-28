@@ -191,9 +191,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=6">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=6"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -236,11 +236,11 @@ function arquivoCliente(cfg){
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n'+
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
   '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n'+
-  '<link rel="stylesheet" href="/assets/tc.css?v=3">\n</head>\n<body>\n'+
+  '<link rel="stylesheet" href="/assets/tc.css?v=6">\n</head>\n<body>\n'+
   '<div class="phone"><div class="vp" id="vp"></div></div>\n\n'+
   '<!-- bloco gerado pelo editor -->\n<script>\nwindow.TC = {\n'+
   c.join(',\n')+',\n\n  cores: {\n'+cores.join(',\n')+'\n  },\n\n'+app+'\n};\n</'+'script>\n\n'+
-  '<script src="/assets/tc.js?v=3"></'+'script>\n</body>\n</html>\n';
+  '<script src="/assets/tc.js?v=6"></'+'script>\n</body>\n</html>\n';
 }
 function baixarDireto(nome, txt){
   try{

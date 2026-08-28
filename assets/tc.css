@@ -20,15 +20,30 @@
   --ff:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;height:100%;overflow:hidden}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
 body{font-family:var(--ff);background:#EDEFF3;color:var(--ink);
   display:flex;align-items:center;justify-content:center;height:100dvh;width:100vw}
-button{font-family:inherit}
+button{font-family:inherit;touch-action:manipulation}
+a,button,label,select,input,.opt,.tab,.card,.dest,.chip{touch-action:manipulation}
 
 /* ---------- MOLDURA DO SMARTPHONE ---------- */
+/* celular de verdade (<520px): o protótipo ocupa a tela inteira */
 .phone{position:relative;background:#0E1A2B;width:100vw;height:100dvh;overflow:hidden}
+
+/* desktop: moldura de tamanho FIXO 392x838 que encolhe inteira, na proporção.
+   O fator --k é calculado no tc.js (as media queries abaixo são só o palpite
+   inicial, para não haver salto antes do script rodar). */
+@media(min-width:520px) and (max-height:900px){:root{--k:.94}}
+@media(min-width:520px) and (max-height:840px){:root{--k:.88}}
+@media(min-width:520px) and (max-height:780px){:root{--k:.82}}
+@media(min-width:520px) and (max-height:720px){:root{--k:.75}}
+@media(min-width:520px) and (max-height:660px){:root{--k:.68}}
+@media(min-width:520px) and (max-height:600px){:root{--k:.61}}
+@media(min-width:520px) and (max-height:540px){:root{--k:.55}}
+@media(min-width:520px) and (max-height:480px){:root{--k:.48}}
 @media(min-width:520px){
-  .phone{width:392px;height:min(838px,96dvh);padding:12px;border-radius:46px;
+  .phone{width:392px;height:838px;padding:12px;border-radius:46px;flex:0 0 auto;
+    transform:scale(var(--k,1));transform-origin:center center;
     box-shadow:0 30px 70px rgba(14,26,43,.35),inset 0 0 0 2px #223247}
   .phone::before{content:"";position:absolute;top:20px;left:50%;transform:translateX(-50%);
     width:118px;height:5px;border-radius:5px;background:#243449;z-index:90}
@@ -36,7 +51,7 @@ button{font-family:inherit}
 }
 .vp{position:relative;width:100%;height:100%;background:#fff;overflow:hidden}
 .screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:#fff;display:none;
-  -webkit-overflow-scrolling:touch}
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .screen.on{display:block;animation:fade .22s ease}
 .screen::-webkit-scrollbar{width:0}
 @keyframes fade{from{opacity:.4}to{opacity:1}}
@@ -618,3 +633,34 @@ button{font-family:inherit}
 
 /* o resumo passa a ter a altura do próprio conteúdo, limitado a ~3/4 da tela */
 .sheet,.sheet.fechado{height:auto;max-height:74%}
+
+
+/* ============================================================
+   CELULAR DE VERDADE (<520px) — navegação com o dedo
+   ============================================================ */
+@media(max-width:519px){
+  /* entalhe / ilha dinâmica no topo e barra de gestos embaixo */
+  .sysbar{padding-top:calc(7px + env(safe-area-inset-top))}
+  .appscreen{padding-top:env(safe-area-inset-top)}
+  .fixbar{height:auto;min-height:56px;padding-top:0;
+    padding-bottom:env(safe-area-inset-bottom);align-items:center}
+  .fixbar.on{min-height:calc(56px + env(safe-area-inset-bottom))}
+  .with-bar{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  .with-cta{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  .screen.with-cta-datas{padding-bottom:calc(176px + env(safe-area-inset-bottom))}
+  .sheet-body{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .screen.with-sheet{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  .modal .sh{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+
+  /* nada de zoom automático do iOS ao tocar num campo (precisa de >=16px) */
+  .field input,.inp input,.inp select,#qDest{font-size:16px}
+
+  /* alvos de toque confortáveis (>=44px) */
+  .opt{padding:15px 18px;min-height:52px}
+  .tab{padding:15px 0}
+  .chip{padding:10px 16px}
+  .btn{padding:12px 22px}
+  .day{min-height:42px}
+  .stepper button{width:38px;height:38px}
+  .foot a{padding:4px 0;display:inline-block}
+}
