@@ -59,16 +59,33 @@ export default async function handler(req, res) {
   /* --- procurar a marca --- */
   let alvo = String(req.query.url || '').trim();
   if (!alvo) return res.status(400).json({ erro: 'Informe url=' });
+
+  // digitou só o nome da empresa? tenta os domínios mais prováveis
+  let porNome = null;
+  if (!/\./.test(alvo)) {
+    porNome = alvo;
+    const limpo = alvo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    alvo = 'https://' + limpo + '.com.br';
+  }
   if (!/^https?:\/\//i.test(alvo)) alvo = 'https://' + alvo.replace(/^\/+/, '');
 
-  let html = '', base = alvo, nome = null, cor = null;
+  let html = '', base = alvo, nome = porNome, cor = null;
+  const tentativas = [alvo];
   try {
-    const r = await baixar(alvo, 9000);
-    base = r.url;
-    html = (await r.text()).slice(0, 500000);
-  } catch {
-    return res.status(502).json({ erro: 'Não consegui abrir esse site.' });
+    const u = new URL(alvo);
+    if (!u.host.startsWith('www.')) tentativas.push(u.protocol + '//www.' + u.host + u.pathname);
+    if (porNome) tentativas.push('https://' + u.host.replace(/\.com\.br$/, '.com'));
+  } catch {}
+
+  for (const t of tentativas) {
+    try {
+      const r = await baixar(t, 9000);
+      const corpo = (await r.text()).slice(0, 500000);
+      if (corpo.length > html.length) { html = corpo; base = r.url; }
+      if (html.length > 4000) break;      // já veio página de verdade
+    } catch {}
   }
+  if (!html && !porNome) return res.status(502).json({ erro: 'Não consegui abrir esse site.' });
 
   const pega = (re) => { const m = html.match(re); return m ? m[1].trim() : null; };
   cor = pega(/<meta[^>]+name=["']theme-color["'][^>]+content=["']([^"']+)["']/i)
@@ -76,7 +93,7 @@ export default async function handler(req, res) {
   if (cor && !/^#?[0-9a-f]{3,8}$/i.test(cor.replace('#', ''))) cor = null;
   if (cor && cor[0] !== '#') cor = '#' + cor;
   nome = pega(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i)
-      || (pega(/<title[^>]*>([^<]+)</i) || '').split(/[|\-–—]/)[0].trim() || null;
+      || (pega(/<title[^>]*>([^<]+)</i) || '').split(/[|\-–—]/)[0].trim() || nome;
 
   const host = new URL(base).host;
   const candidatos = acharNoHtml(html, base);
@@ -130,7 +147,7 @@ export default async function handler(req, res) {
 
   const checados = await Promise.all(fila.map(async (c) => {
     try {
-      const r = await baixar(c.url, 5000);
+      const r = await baixar(c.url, 8000);
       if (!r.ok) return null;
       const tipo = (r.headers.get('content-type') || '').split(';')[0];
       if (!/^image\//.test(tipo)) return null;
