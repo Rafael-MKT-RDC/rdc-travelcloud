@@ -567,13 +567,13 @@ V.prime = function(){
   '<div class="pbody">'+
     '<h2 class="ptit">Mais economia em cada <i>oportunidade de viajar</i>.</h2>'+
     '<div class="pcard"><div class="pval">R$ 29,90<small>/mês</small></div>'+
-      '<p>Assine o RDC Prime e encontre <b>descontos de até 40%</b> em serviços '+
-      'turísticos selecionados.</p></div>'+
+      '<p>Assine o RDC Prime e encontre <b>descontos de até 40% em serviços '+
+      'turísticos selecionados</b>.</p></div>'+
     '<h3 class="psub">O que é o RDC Prime?</h3>'+
-    '<p class="ptxt">O RDC Prime é um <b>acelerador adicional</b>, disponível por '+
-      '<b>assinatura mensal</b>.</p>'+
-    '<p class="ptxt">Com ele, você pode encontrar <b>descontos de até 40%</b> em serviços '+
-      'turísticos selecionados, criando <b>novas oportunidades para viajar</b> ao longo do ano.</p>'+
+    '<p class="ptxt">O <b>RDC Prime é um acelerador adicional, disponível por '+
+      'assinatura mensal</b>.</p>'+
+    '<p class="ptxt">Com ele, você pode encontrar <b>descontos de até 40% em serviços '+
+      'turísticos selecionados</b>, criando <b>novas oportunidades para viajar</b> ao longo do ano.</p>'+
     '<p class="ptxt destaque">Porque viajar mais não precisa esperar as próximas férias.</p>'+
     '<h3 class="psub">O que você encontra com o RDC Prime</h3>'+
     vantagem(I.etiqueta,'Até 40% de desconto',
