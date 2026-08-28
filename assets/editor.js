@@ -141,9 +141,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="../assets/tc.css">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="../assets/tc.js"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -224,7 +224,7 @@ function verGaleria(){
   var cartoes = lista.length ? lista.map(function(p,i){
     var t = derivar(p.cores.brand);
     var capa = p.logo
-      ? '<img src="'+esc(p.logo)+'" alt="">'
+      ? '<img src="'+esc(p.logo)+'" alt="'+esc(p.cliente)+'">'
       : '<b>'+esc(p.cliente)+'</b>';
     return '<div class="proto">'+
       '<div class="capa" style="background:'+(p.logo?'#fff':'linear-gradient(120deg,'+p.cores.brand+','+t.dark+')')+'">'+capa+'</div>'+
@@ -235,9 +235,11 @@ function verGaleria(){
           (p.prime!==false ? '<span class="selo ok">Prime</span>' : '<span class="selo">Sem Prime</span>')+
           (p.appProprio && p.appProprio.ativo ? '<span class="selo">App próprio</span>' : '')+
           (p.logo ? '' : '<span class="selo">Sem logo</span>')+
+          (p.publicado ? '<span class="selo ar">No ar</span>' : '')+
         '</div></div>'+
       '<div class="acoes">'+
-        '<button class="b mini" data-abrir="'+i+'">Abrir</button>'+
+        (p.publicado ? '<a class="b mini" href="/'+esc(p.slug)+'/" target="_blank" rel="noopener">Abrir</a>'
+                     : '<button class="b mini" data-abrir="'+i+'">Prévia</button>')+
         '<button class="b mini" data-editar="'+i+'">Editar</button>'+
         '<button class="b mini" data-copiar="'+i+'">Duplicar</button>'+
         '<button class="b mini perigo" data-excluir="'+i+'">Excluir</button>'+
@@ -593,7 +595,29 @@ function buscarMarca(url, usarLogo, aplicarCor){
     });
 }
 
+/* ---------- protótipos que já estão publicados no site ---------- */
+function sementes(){
+  var noSite = !window.TC_INLINE;   // fora do pacote, os arquivos do site existem
+  return [
+    { slug:'padrao', cliente:'Padrão Travel Cloud', rotulo:'Viagens', logo:null, prime:true,
+      padrao:true, cores:{brand:'#001489'}, publicado:true,
+      appProprio:{ativo:false, imagem:null, hotspot:{x:3,y:36,w:94,h:7}} },
+    { slug:'brb', cliente:'BRB', rotulo:'Viagens', logo: noSite ? '/brb/logo.png' : null,
+      prime:true, cores:{brand:'#00AEEF'}, publicado:true,
+      appProprio:{ativo:!!noSite, imagem: noSite ? '/brb/app-home.jpg' : null,
+                  hotspot:{x:2.4,y:35.8,w:95,h:6.4}} },
+    { slug:'alelo', cliente:'Alelo', rotulo:'Viagens', logo:null, prime:true,
+      cores:{brand:'#00A859'}, publicado:true,
+      appProprio:{ativo:false, imagem:null, hotspot:{x:3,y:36,w:94,h:7}} }
+  ];
+}
+
 /* ---------- início ---------- */
 lista = carregar();
+if(!lista.length && !localStorage.getItem(CHAVE+'_semeado')){
+  lista = sementes();
+  try{ localStorage.setItem(CHAVE+'_semeado','1'); }catch(e){}
+  gravar();
+}
 verGaleria();
 })();

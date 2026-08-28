@@ -137,3 +137,5 @@ h1{font-family:var(--ff-d);font-size:clamp(23px,3vw,30px);margin:0;letter-spacin
 .rodape-acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .esconde{display:none!important}
 code{background:var(--panel-2);border-radius:5px;padding:2px 6px;font-size:12.5px}
+.selo.ar{background:#E7F0FF;color:#0A46A8}
+.proto .capa img{max-height:44px}
