@@ -189,6 +189,292 @@ function novoModelo(){
 }
 window.TC_EDITOR_LISTA = function(){ return lista; };
 
+/* ============================================================
+   QR Code — codificador próprio, sem depender de biblioteca de fora.
+   Modo byte, correção M, versões 1 a 10 (dá e sobra para uma URL).
+   ============================================================ */
+function qrMatriz(texto){
+  /* --- bytes do texto (UTF-8) --- */
+  var dados = [];
+  for(var i=0;i<texto.length;i++){
+    var c = texto.charCodeAt(i);
+    if(c < 0x80) dados.push(c);
+    else if(c < 0x800){ dados.push(0xC0|(c>>6), 0x80|(c&63)); }
+    else if(c < 0xD800 || c >= 0xE000){ dados.push(0xE0|(c>>12), 0x80|((c>>6)&63), 0x80|(c&63)); }
+    else { i++; var u = 0x10000 + (((c&0x3FF)<<10) | (texto.charCodeAt(i)&0x3FF));
+           dados.push(0xF0|(u>>18), 0x80|((u>>12)&63), 0x80|((u>>6)&63), 0x80|(u&63)); }
+  }
+
+  /* --- tabela das versões, nível M: [ecc por bloco, [blocos, dados], [blocos, dados]] --- */
+  var TAB = {
+    1:[10,[1,16]], 2:[16,[1,28]], 3:[26,[1,44]], 4:[18,[2,32]], 5:[24,[2,43]],
+    6:[16,[4,27]], 7:[18,[4,31]], 8:[22,[2,38],[2,39]], 9:[22,[3,36],[2,37]],
+    10:[26,[4,43],[1,44]]
+  };
+  function totalDados(v){
+    var t = TAB[v], n = t[1][0]*t[1][1];
+    if(t[2]) n += t[2][0]*t[2][1];
+    return n;
+  }
+  /* escolhe a menor versão que cabe */
+  var versao = 0;
+  for(var v=1; v<=10; v++){
+    var cab = totalDados(v);
+    var bitsCabecalho = 4 + (v < 10 ? 8 : 16);
+    if(dados.length + Math.ceil(bitsCabecalho/8) <= cab){ versao = v; break; }
+  }
+  if(!versao) throw new Error('texto longo demais para este gerador');
+
+  /* --- fluxo de bits --- */
+  var bits = [];
+  function poe(valor, n){ for(var b=n-1;b>=0;b--) bits.push((valor>>b)&1); }
+  poe(4, 4);                                   /* modo byte */
+  poe(dados.length, versao < 10 ? 8 : 16);     /* quantos bytes */
+  for(var i=0;i<dados.length;i++) poe(dados[i], 8);
+  var capacidade = totalDados(versao) * 8;
+  for(var i=0;i<4 && bits.length < capacidade;i++) bits.push(0);   /* terminador */
+  while(bits.length % 8) bits.push(0);
+  var cw = [];
+  for(var i=0;i<bits.length;i+=8){
+    var b=0; for(var j=0;j<8;j++) b = (b<<1) | bits[i+j];
+    cw.push(b);
+  }
+  var enche = [0xEC, 0x11], k = 0;
+  while(cw.length < totalDados(versao)) cw.push(enche[k++ % 2]);
+
+  /* --- Reed-Solomon em GF(256) --- */
+  var EXP = new Array(512), LOG = new Array(256);
+  for(var i=0,x=1;i<255;i++){ EXP[i]=x; LOG[x]=i; x<<=1; if(x&0x100) x^=0x11D; }
+  for(var i=255;i<512;i++) EXP[i] = EXP[i-255];
+  function mul(a,b){ return (a===0||b===0) ? 0 : EXP[LOG[a]+LOG[b]]; }
+  function gerador(n){
+    var g = [1];
+    for(var i=0;i<n;i++){
+      var novo = g.concat([0]);
+      for(var j=0;j<g.length;j++) novo[j+1] ^= mul(g[j], EXP[i]);
+      g = novo;
+    }
+    return g;
+  }
+  function resto(bloco, n){
+    var g = gerador(n), r = bloco.concat(new Array(n).fill(0));
+    for(var i=0;i<bloco.length;i++){
+      var f = r[i];
+      if(f === 0) continue;
+      for(var j=0;j<g.length;j++) r[i+j] ^= mul(g[j], f);
+    }
+    return r.slice(bloco.length);
+  }
+
+  /* --- divide em blocos, calcula a correção e intercala --- */
+  var t = TAB[versao], nEcc = t[0], grupos = [t[1]];
+  if(t[2]) grupos.push(t[2]);
+  var blocosDados = [], blocosEcc = [], p = 0;
+  grupos.forEach(function(g){
+    for(var i=0;i<g[0];i++){
+      var b = cw.slice(p, p+g[1]); p += g[1];
+      blocosDados.push(b);
+      blocosEcc.push(resto(b, nEcc));
+    }
+  });
+  var fluxo = [];
+  var maiorD = Math.max.apply(null, blocosDados.map(function(b){ return b.length; }));
+  for(var i=0;i<maiorD;i++) blocosDados.forEach(function(b){ if(i<b.length) fluxo.push(b[i]); });
+  for(var i=0;i<nEcc;i++) blocosEcc.forEach(function(b){ fluxo.push(b[i]); });
+
+  /* --- desenho --- */
+  var n = versao*4 + 17;
+  var m = [], reservado = [];
+  for(var i=0;i<n;i++){ m.push(new Array(n).fill(0)); reservado.push(new Array(n).fill(0)); }
+  function poeQuadro(lin, col, tam, desenho){
+    for(var y=0;y<tam;y++) for(var x=0;x<tam;x++){
+      var Y=lin+y, X=col+x;
+      if(Y<0||X<0||Y>=n||X>=n) continue;
+      m[Y][X] = desenho(y,x); reservado[Y][X] = 1;
+    }
+  }
+  function finder(y,x){
+    /* 7x7: borda preta (d=3), anel branco (d=2), miolo preto (d<=1) */
+    var d = Math.max(Math.abs(y-3), Math.abs(x-3));
+    return d===2 ? 0 : 1;
+  }
+  [[0,0],[0,n-7],[n-7,0]].forEach(function(pos){
+    poeQuadro(pos[0]-1, pos[1]-1, 9, function(y,x){
+      var Y=y-1, X=x-1;
+      if(Y<0||X<0||Y>6||X>6) return 0;
+      return finder(Y,X);
+    });
+  });
+  /* temporização */
+  for(var i=8;i<n-8;i++){
+    m[6][i] = (i%2===0)?1:0; reservado[6][i]=1;
+    m[i][6] = (i%2===0)?1:0; reservado[i][6]=1;
+  }
+  /* alinhamento */
+  var ALI = {1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+  var cs = ALI[versao];
+  for(var a=0;a<cs.length;a++) for(var b=0;b<cs.length;b++){
+    var cy=cs[a], cx=cs[b];
+    if((cy<=8&&cx<=8) || (cy<=8&&cx>=n-9) || (cy>=n-9&&cx<=8)) continue;
+    poeQuadro(cy-2, cx-2, 5, function(y,x){
+      var d = Math.max(Math.abs(y-2), Math.abs(x-2));
+      return d===1 ? 0 : 1;
+    });
+  }
+  /* módulo escuro e áreas de formato */
+  m[n-8][8] = 1; reservado[n-8][8] = 1;
+  for(var i=0;i<9;i++){ if(!reservado[8][i]){ reservado[8][i]=1; } if(!reservado[i][8]){ reservado[i][8]=1; } }
+  for(var i=0;i<8;i++){ reservado[8][n-1-i]=1; reservado[n-1-i][8]=1; }
+  /* informação de versão (7 em diante) */
+  if(versao >= 7){
+    var vi = versao << 12, g = 0x1F25;
+    var d = vi;
+    for(var i=17;i>=12;i--) if(d & (1<<i)) d ^= g << (i-12);
+    vi |= d;
+    for(var i=0;i<18;i++){
+      var bit = (vi >> i) & 1;
+      var y = Math.floor(i/3), x = i%3;
+      m[y][n-11+x] = bit; reservado[y][n-11+x] = 1;
+      m[n-11+x][y] = bit; reservado[n-11+x][y] = 1;
+    }
+  }
+  /* dados em ziguezague */
+  var idx = 0, subindo = true;
+  for(var col = n-1; col > 0; col -= 2){
+    if(col === 6) col--;
+    for(var passo=0; passo<n; passo++){
+      var lin = subindo ? (n-1-passo) : passo;
+      for(var c=0;c<2;c++){
+        var x = col - c;
+        if(reservado[lin][x]) continue;
+        var bit = 0;
+        if(idx < fluxo.length*8){
+          bit = (fluxo[idx>>3] >> (7-(idx&7))) & 1;
+        }
+        m[lin][x] = bit; idx++;
+      }
+    }
+    subindo = !subindo;
+  }
+  /* máscaras */
+  var MASC = [
+    function(y,x){ return (y+x)%2===0; },
+    function(y,x){ return y%2===0; },
+    function(y,x){ return x%3===0; },
+    function(y,x){ return (y+x)%3===0; },
+    function(y,x){ return (Math.floor(y/2)+Math.floor(x/3))%2===0; },
+    function(y,x){ return ((y*x)%2 + (y*x)%3)===0; },
+    function(y,x){ return (((y*x)%2 + (y*x)%3)%2)===0; },
+    function(y,x){ return (((y+x)%2 + (y*x)%3)%2)===0; }
+  ];
+  function formato(masc){
+    var v = (0 << 3) | masc;   /* nível M = 00 */
+    var d = v << 10, g = 0x537;
+    for(var i=14;i>=10;i--) if(d & (1<<i)) d ^= g << (i-10);
+    return ((v<<10) | d) ^ 0x5412;
+  }
+  function penalidade(mm){
+    var p = 0, i, j, k;
+    /* 1: sequências de 5 ou mais */
+    for(i=0;i<n;i++){
+      for(var eixo=0; eixo<2; eixo++){
+        var cor = -1, run = 0;
+        for(j=0;j<n;j++){
+          var c = eixo ? mm[j][i] : mm[i][j];
+          if(c === cor) run++;
+          else { if(run >= 5) p += run - 2; cor = c; run = 1; }
+        }
+        if(run >= 5) p += run - 2;
+      }
+    }
+    /* 2: blocos 2x2 */
+    for(i=0;i<n-1;i++) for(j=0;j<n-1;j++){
+      var c = mm[i][j];
+      if(c===mm[i][j+1] && c===mm[i+1][j] && c===mm[i+1][j+1]) p += 3;
+    }
+    /* 3: padrão 1:1:3:1:1 */
+    var alvo = [1,0,1,1,1,0,1,0,0,0,0];
+    var alvo2 = [0,0,0,0,1,0,1,1,1,0,1];
+    for(i=0;i<n;i++) for(j=0;j<=n-11;j++){
+      var okA=true, okB=true, okC=true, okD=true;
+      for(k=0;k<11;k++){
+        if(mm[i][j+k] !== alvo[k]) okA=false;
+        if(mm[i][j+k] !== alvo2[k]) okB=false;
+        if(mm[j+k][i] !== alvo[k]) okC=false;
+        if(mm[j+k][i] !== alvo2[k]) okD=false;
+      }
+      if(okA) p+=40; if(okB) p+=40; if(okC) p+=40; if(okD) p+=40;
+    }
+    /* 4: proporção de escuros */
+    var escuros = 0;
+    for(i=0;i<n;i++) for(j=0;j<n;j++) escuros += mm[i][j];
+    var pct = escuros * 100 / (n*n);
+    p += Math.floor(Math.abs(pct - 50) / 5) * 10;
+    return p;
+  }
+  var melhor = null, melhorNota = Infinity, melhorMasc = 0;
+  for(var masc=0; masc<8; masc++){
+    var mm = m.map(function(l){ return l.slice(); });
+    for(var y=0;y<n;y++) for(var x=0;x<n;x++)
+      if(!reservado[y][x] && MASC[masc](y,x)) mm[y][x] ^= 1;
+    var f = formato(masc);
+    /* os 15 bits entram do mais significativo para o menos, nas duas cópias */
+    var lugares1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    var lugares2 = [];
+    for(var i=0;i<7;i++) lugares2.push([n-1-i, 8]);
+    for(var i=0;i<8;i++) lugares2.push([8, n-8+i]);
+    for(var i=0;i<15;i++){
+      var bit = (f >> (14-i)) & 1;
+      mm[lugares1[i][0]][lugares1[i][1]] = bit;
+      mm[lugares2[i][0]][lugares2[i][1]] = bit;
+    }
+    mm[n-8][8] = 1;
+    var nota = penalidade(mm);
+    if(nota < melhorNota){ melhorNota = nota; melhor = mm; melhorMasc = masc; }
+  }
+  return { m: melhor, n: n, versao: versao, mascara: melhorMasc };
+}
+
+/* ---------- QR code: desenho e download ---------- */
+function qrDesenha(canvas, texto, modulo){
+  var r = qrMatriz(texto), margem = 4, lado = (r.n + margem*2) * modulo;
+  canvas.width = lado; canvas.height = lado;
+  var g = canvas.getContext('2d');
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, lado, lado);
+  g.fillStyle = '#000000';
+  for(var y=0;y<r.n;y++) for(var x=0;x<r.n;x++){
+    if(r.m[y][x]) g.fillRect((x+margem)*modulo, (y+margem)*modulo, modulo, modulo);
+  }
+  return r;
+}
+function qrSVG(texto){
+  var r = qrMatriz(texto), margem = 4, lado = r.n + margem*2, d = '';
+  for(var y=0;y<r.n;y++) for(var x=0;x<r.n;x++){
+    if(r.m[y][x]) d += 'M' + (x+margem) + ' ' + (y+margem) + 'h1v1h-1z';
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + lado + ' ' + lado + '" ' +
+         'width="1024" height="1024" shape-rendering="crispEdges">' +
+         '<rect width="' + lado + '" height="' + lado + '" fill="#fff"/>' +
+         '<path d="' + d + '" fill="#000"/></svg>';
+}
+function baixa(nome, url){
+  var a = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ a.remove(); }, 600);
+}
+function qrBaixaPNG(texto, nome){
+  var c = document.createElement('canvas');
+  qrDesenha(c, texto, 16);              /* bem grande, serve para impresso */
+  baixa(nome + '.png', c.toDataURL('image/png'));
+}
+function qrBaixaSVG(texto, nome){
+  var b = new Blob([qrSVG(texto)], {type:'image/svg+xml;charset=utf-8'});
+  var u = URL.createObjectURL(b);
+  baixa(nome + '.svg', u);
+  setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+}
+
 /* ---------- documento da prévia ---------- */
 function montarDoc(cfg){
   var tc = {
@@ -206,9 +492,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=14">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=15">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=14"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=15"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -338,6 +624,7 @@ function verGaleria(){
       '<div class="acoes">'+
         '<a class="b mini" href="'+esc(linkDe(p))+'" target="_blank" rel="noopener">Abrir link</a>'+
         '<button class="b mini" data-link="'+i+'">Copiar link</button>'+
+        '<button class="b mini" data-qr="'+i+'">QR code</button>'+
         '<button class="b mini" data-editar="'+i+'">Editar</button>'+
         '<button class="b mini perigo" data-excluir="'+i+'">Excluir</button>'+
       '</div></div>';
@@ -368,6 +655,16 @@ function verGaleria(){
   };
   app.querySelectorAll('[data-editar]').forEach(function(b){
     b.onclick = function(){ var i=+b.dataset.editar; verEditor(JSON.parse(JSON.stringify(lista[i])), i); };
+  });
+  app.querySelectorAll('[data-qr]').forEach(function(b){
+    b.onclick = function(){
+      var p = lista[+b.dataset.qr];
+      try{
+        qrBaixaPNG(linkDe(p), 'qr-' + (p.slug || 'cliente'));
+        var antes = b.textContent; b.textContent = 'Baixando…';
+        setTimeout(function(){ if(b.isConnected) b.textContent = antes; }, 1600);
+      }catch(e){ alert('Não consegui gerar o QR code: ' + e.message); }
+    };
   });
   app.querySelectorAll('[data-link]').forEach(function(b){
     b.onclick = function(){
@@ -480,6 +777,22 @@ function verEditor(cfg, idx){
       '</div>'+
     '</div></div>'+
 
+  '<div class="bloco"><h2>QR code do link</h2>'+
+    '<p class="dica">Para a apresentação, o e-mail ou o impresso: quem apontar a câmera '+
+    'abre o protótipo do cliente. Ele acompanha o link acima.</p>'+
+    '<div class="qr-linha">'+
+      '<div class="qr-moldura"><canvas id="qrTela"></canvas></div>'+
+      '<div class="qr-lado">'+
+        '<code id="qrLink"></code>'+
+        '<div class="rodape-acoes">'+
+          '<button class="b" id="btQrPng">Baixar PNG</button>'+
+          '<button class="b" id="btQrSvg">Baixar SVG</button>'+
+        '</div>'+
+        '<p class="dica" style="margin:0">O PNG sai grande, bom para slide e impresso. '+
+        'O SVG não perde qualidade em nenhum tamanho.</p>'+
+      '</div>'+
+    '</div></div>'+
+
   '<div class="bloco"><h2>Publicar</h2>'+
     '<p class="dica">É só salvar: o link entra no ar na hora, em '+
       '<code>'+esc(SITE)+'/<span id="vSlug2">'+esc(cfg.slug||'cliente')+'</span></code>.</p>'+
@@ -523,15 +836,30 @@ function ligarEditor(){
 
   $('btVoltar').onclick = verGaleria;
 
+  /* --- QR code do link, sempre igual ao apelido que está no campo --- */
+  function linkAtual(){ return SITE + '/' + (rascunho.slug || 'cliente'); }
+  function pintaQR(){
+    var tela = $('qrTela'); if(!tela) return;
+    var url = linkAtual();
+    $('qrLink').textContent = url;
+    try{ qrDesenha(tela, url, 6); }
+    catch(e){ $('qrLink').textContent = 'Não consegui gerar: ' + e.message; }
+  }
+  pintaQR();
+  $('btQrPng').onclick = function(){ qrBaixaPNG(linkAtual(), 'qr-' + (rascunho.slug||'cliente')); };
+  $('btQrSvg').onclick = function(){ qrBaixaSVG(linkAtual(), 'qr-' + (rascunho.slug||'cliente')); };
+
   $('fNome').oninput = function(){
     rascunho.cliente = this.value;
     if(!slugTocado){ rascunho.slug = apelido(this.value); $('fSlug').value = rascunho.slug; }
     $('vSlug').textContent = rascunho.slug||'cliente'; $('vSlug2').textContent = rascunho.slug||'cliente';
+    pintaQR();
     atualizarPrevia();
   };
   $('fSlug').oninput = function(){
     slugTocado = true; rascunho.slug = apelido(this.value); this.value = rascunho.slug;
     $('vSlug').textContent = rascunho.slug||'cliente'; $('vSlug2').textContent = rascunho.slug||'cliente';
+    pintaQR();
   };
   $('fRotulo').oninput = function(){ rascunho.rotulo = this.value; atualizarPrevia(); };
 
