@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   try {
     const estado = await lerEstado();
-    if (estado.novo) { await gravarEstado(estado); delete estado.novo; }
+    if (estado.novo && !estado.indisponivel) { await gravarEstado(estado); delete estado.novo; }
 
     const cadastrado = estado.emails.some(e => String(e).trim().toLowerCase() === alvo);
     if (!cadastrado) {

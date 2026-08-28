@@ -10,7 +10,13 @@ export default async function handler(req, res) {
     delete estado.novo;
 
     if (req.method === 'GET') {
-      return res.status(200).json({ clientes: estado.clientes, emails: estado.emails, quem });
+      return res.status(200).json({ clientes: estado.clientes, emails: estado.emails, quem,
+        somenteLeitura: estado.indisponivel ? true : undefined });
+    }
+    if (estado.indisponivel && req.method === 'PUT') {
+      return res.status(503).json({ erro: 'O armazenamento do projeto está indisponível, ' +
+        'então não dá para salvar agora — nada foi alterado. Avise o time para conferir o ' +
+        'Blob do projeto na Vercel.' });
     }
     if (req.method === 'PUT') {
       const b = req.body || {};

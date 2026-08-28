@@ -51,14 +51,46 @@ export function tokenDaRequisicao(req) {
 }
 
 /** Lê o estado. O caminho tem sufixo aleatório, então a URL não é adivinhável. */
+/* Protótipos que existem desde o começo. Servem de rede de segurança: se o
+   armazenamento estiver fora do ar, os links desses clientes continuam abrindo
+   (em modo somente leitura) em vez de devolver erro para quem for apresentar. */
+const CLIENTES_PADRAO = [
+  { cliente: 'Padrão Travel Cloud', slug: 'padrao', rotulo: 'Viagens', logo: null,
+    prime: true, padrao: true, cores: { brand: '#001489' }, appProprio: { ativo: false } },
+  { cliente: 'BRB', slug: 'brb', rotulo: 'Viagens', logo: '/brb/logo.png', prime: true,
+    cores: { brand: '#00AEEF' },
+    appProprio: { ativo: true, imagem: '/brb/app-home.jpg', hotspot: { x: 2.4, y: 35.8, w: 95, h: 6.4 } } },
+  { cliente: 'Alelo', slug: 'alelo', rotulo: 'Viagens', logo: null, prime: true,
+    cores: { brand: '#00A859' }, appProprio: { ativo: false } }
+];
+
+function reserva(motivo) {
+  return {
+    emails: EMAILS_PADRAO, senhaHash: sha(SENHA_PADRAO),
+    clientes: CLIENTES_PADRAO, indisponivel: String(motivo).slice(0, 120)
+  };
+}
+
 export async function lerEstado() {
-  const { blobs } = await list({ prefix: PREFIXO, limit: 20 });
+  let blobs;
+  try {
+    ({ blobs } = await list({ prefix: PREFIXO, limit: 20 }));
+  } catch (e) {
+    return reserva((e && e.message) || 'listagem indisponível');
+  }
   const atual = blobs.sort((x, y) => new Date(y.uploadedAt) - new Date(x.uploadedAt))[0];
   if (!atual) {
     return { emails: EMAILS_PADRAO, senhaHash: sha(SENHA_PADRAO), clientes: [], novo: true };
   }
-  const r = await fetch(atual.url, { cache: 'no-store' });
-  const d = await r.json();
+  let d;
+  try {
+    const r = await fetch(atual.url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('leitura recusada (' + r.status + ')');
+    d = await r.json();
+  } catch (e) {
+    // armazenamento fora do ar: modo somente leitura, com os protótipos conhecidos
+    return reserva((e && e.message) || 'leitura indisponível');
+  }
   return {
     emails: Array.isArray(d.emails) && d.emails.length ? d.emails : EMAILS_PADRAO,
     senhaHash: d.senhaHash || sha(SENHA_PADRAO),

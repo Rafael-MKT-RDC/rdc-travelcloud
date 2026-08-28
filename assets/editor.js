@@ -26,6 +26,7 @@ function copiaAntiga(txt, feito){
   }catch(e){ window.prompt('Copie o link:', txt); }
 }
 var emailsAcesso = [];
+var somenteLeitura = false;   // armazenamento fora do ar
 var sessao = { token:'', email:'' };
 try{
   sessao.token = localStorage.getItem('tc_sessao') || '';
@@ -58,6 +59,7 @@ function carregar(){
   }
   return pedir('/api/dados').then(function(d){
     emailsAcesso = d.emails || [];
+    somenteLeitura = !!d.somenteLeitura;
     return d.clientes || [];
   });
 }
@@ -204,9 +206,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=13">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=14">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=13"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=14"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -352,6 +354,10 @@ function verGaleria(){
    (lista.length
      ? '<div class="grade">'+cartoes+'</div>'
      : '<div class="vazio">Nenhum protótipo ainda.<br>Comece pelo <b>+ Novo protótipo</b> — leva menos de um minuto.</div>')+
+   (somenteLeitura ? '<div class="recado ruim" style="margin-bottom:18px">'+
+      '<b>O armazenamento do projeto está indisponível.</b> Você está vendo os protótipos '+
+      'que já estavam no ar e <b>não é possível salvar</b> agora — nada foi perdido. '+
+      'Alguém do time precisa conferir o Blob do projeto na Vercel.</div>' : '')+
    (TEM_API ? '<p class="assinado">Você entrou como <b>'+esc(sessao.email)+'</b>. '+
       'Tudo o que você salvar aqui aparece para todo mundo do time.</p>' : '');
 
