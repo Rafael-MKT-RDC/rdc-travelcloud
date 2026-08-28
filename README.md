@@ -82,3 +82,51 @@ prazo de reembolso, total, parcelamento e a economia do Prime.
 
 Pasta estática — funciona em qualquer host. No Netlify/Vercel, publique a pasta
 `travelcloud/` como raiz do site: cada cliente vira uma rota (`/brb`, `/alelo`, ...).
+
+---
+
+## Estrutura do repositório
+
+```
+/                     raiz do site publicado
+├── index.html        galeria pública dos protótipos já publicados
+├── editor/           editor interno: cria, edita e exclui protótipos
+├── padrao/           o padrão de referência (RDC)
+├── brb/              cliente com app próprio
+├── alelo/            teste de troca de cor
+├── assets/
+│   ├── tc.css        estilo do protótipo (nenhuma cor de marca escrita direto)
+│   ├── tc.js         motor: telas, navegação, estado da viagem
+│   ├── editor.css    estilo do editor
+│   ├── editor.js     lógica do editor
+│   └── img/          fotos (não têm cor de marca — servem para todos)
+├── api/
+│   └── brand.js      captura logo e cor a partir do site do cliente
+├── docs/             imagens de apoio (fluxo completo, prova de troca de cor)
+├── vercel.json       cache dos assets e CORS da API
+└── package.json      só marca o projeto como ESM, para a função da API
+```
+
+## Publicação
+
+Hospedado na Vercel, ligado a este repositório: **cada push na branch `main` publica**.
+
+- Raiz do site: a pasta deste repositório (não há build).
+- Cada cliente é uma pasta e vira uma rota: `/brb`, `/alelo`, `/padrao`.
+- `api/brand.js` roda como função serverless. Ela existe porque o navegador
+  não consegue ler o site de outra empresa (CORS) — a captura de marca
+  precisa acontecer no servidor.
+
+### Criar um cliente novo
+
+1. Abra `/editor` no site publicado.
+2. Preencha nome, marca (site, logo ou cor à mão) e o link.
+3. **Gerar index.html** — o arquivo sai com o logo já embutido.
+4. Crie a pasta com o nome do link, coloque o arquivo dentro como `index.html`,
+   faça commit e push. A Vercel publica em seguida.
+
+## Onde a cor da marca aparece
+
+Ver a tabela de tokens mais acima. Regra curta: só `--brand` é obrigatório;
+`--brand-dark`, `--brand-light` e `--brand-ink` são calculados a partir dela
+(mesma fórmula em `assets/tc.js` e `assets/editor.js`).
