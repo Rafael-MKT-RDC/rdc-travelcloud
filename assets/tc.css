@@ -550,6 +550,7 @@ a,button,label,select,input,.opt,.tab,.card,.dest,.chip{touch-action:manipulatio
    sobre fundo mais claro */
 .status.espera{background:var(--ok-bg);color:#0B7A43}
 .fim-foto{position:relative;margin:16px 16px 4px;border-radius:var(--r);overflow:hidden}
+.fim-foto.topo{margin:18px 16px 0}
 .fim-foto img{width:100%;height:132px;object-fit:cover;display:block}
 .fim-foto span{position:absolute;left:16px;bottom:14px;color:#fff;font-size:14.5px;font-weight:700;
   line-height:1.35;text-shadow:0 2px 12px rgba(0,0,0,.55)}

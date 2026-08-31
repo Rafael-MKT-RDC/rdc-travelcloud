@@ -1016,6 +1016,8 @@ V.conclusao = function(){
   if(!novoAssinante){
     // 04. Conclusão/Corporativo — fechamento sem Prime
     return headerMarca()+
+      '<div class="fim-foto topo"><img src="'+img('fim-sem.jpg')+'" alt="">'+
+        '<span>Sua viagem,<br>nosso compromisso.</span></div>'+
       '<div class="fim-card destaque">'+
         '<div class="fim-topo"><span class="fim-ico">'+I.mala+'</span>'+
         '<div><h3>Recebemos sua solicitação</h3>'+
@@ -1026,8 +1028,6 @@ V.conclusao = function(){
         '<p>Estamos confirmando os detalhes da viagem. Assim que o processo for concluído, '+
         'enviaremos todas as informações para o e-mail '+email+'</p>'+
       '</div>'+
-      '<div class="fim-foto"><img src="'+img('fim-sem.jpg')+'" alt="">'+
-        '<span>Sua viagem,<br>nosso compromisso.</span></div>'+
       fecho;
   }
 
