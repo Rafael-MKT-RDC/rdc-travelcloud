@@ -115,6 +115,39 @@ function corDeTexto(brand, escolhida){
   }
   return '#14202B';
 }
+/* ---- as opções de cor de texto que a pessoa escolhe com um clique ---- */
+function tomDaMarca(brand, satAlvo, alvoContraste){
+  var hsl = rgb2hsl(hex2rgb(brand)), l = hsl[2];
+  var sat = Math.max(hsl[1], satAlvo);
+  while(l > 0.04){
+    var tenta = rgb2hex(hsl2rgb([hsl[0], Math.min(1, sat), l]));
+    if(contraste(tenta, '#FFFFFF') >= alvoContraste) return tenta;
+    l -= 0.02;
+  }
+  return rgb2hex(hsl2rgb([hsl[0], Math.min(1, sat), 0.12]));
+}
+function opcoesDeTexto(brand, paleta){
+  var fora = {}, saida = [];
+  function põe(cor, nome, de){
+    if(!cor || !/^#[0-9a-f]{6}$/i.test(cor)) return;
+    cor = cor.toUpperCase();
+    if(fora[cor]) return;
+    if(contraste(cor, '#FFFFFF') < 4.5) return;
+    fora[cor] = 1;
+    saida.push({ cor: cor, nome: nome, de: de });
+  }
+  põe(brand, 'Cor da marca', 'marca');
+  (paleta || []).forEach(function(c){
+    var hsl = rgb2hsl(hex2rgb(c || '#FFFFFF'));
+    põe(c, hsl[1] < 0.12 ? 'Neutro do logo' : 'Cor da identidade', 'identidade');
+  });
+  põe(tomDaMarca(brand, 0, 4.5),   'Tom escuro da marca',  'tom');
+  põe(tomDaMarca(brand, 0.62, 7),  'Tom escuro intenso',   'tom');
+  põe(tomDaMarca(brand, 0.45, 12), 'Quase preta, no matiz','tom');
+  põe('#171B21', 'Cinza-escuro neutro', 'neutro');
+  return saida;
+}
+
 /* ---- a melhor cor da identidade para texto sobre fundo claro ----
    Se a cor principal já tem contraste, é ela mesma. Se não tem (amarelo,
    laranja, verdes claros), procura entre as cores do logo e do site a mais
@@ -171,6 +204,7 @@ function lerCor(txt){
 /* ---------- cores a partir do logo ---------- */
 function coresDoLogo(url, feito){
   var im = new Image();
+  im.crossOrigin = 'anonymous';     /* sem isto o canvas fica sujo e não dá para ler */
   im.onload = function(){
     var L = 120, c = document.createElement('canvas');
     var r = Math.min(L/im.width, L/im.height, 1);
@@ -193,10 +227,10 @@ function coresDoLogo(url, feito){
         return {peso:q.n*(0.55+q.s), cor:rgb2hex([q.r/q.n,q.g/q.n,q.b/q.n])}; });
       arr.sort(function(a,b){return b.peso-a.peso});
       var vistos = {}, saida = [];
-      for(var j=0;j<arr.length && saida.length<6;j++){
+      for(var j=0;j<arr.length && saida.length<8;j++){
         var hsl = rgb2hsl(hex2rgb(arr[j].cor));
         /* agrupa por matiz, mas em cinza o matiz não diz nada: aí separa por tom */
-        var faixa = hsl[1] < 0.18 ? 'c'+Math.round(hsl[2]*6) : 'm'+Math.round(hsl[0]/25);
+        var faixa = hsl[1] < 0.18 ? 'c'+Math.round(hsl[2]*6) : 'm'+Math.round(hsl[0]/20);
         if(vistos[faixa]) continue; vistos[faixa]=1; saida.push(arr[j].cor);
       }
       return saida;
@@ -860,9 +894,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=21">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=22">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=21"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=22"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -973,16 +1007,42 @@ function verEmails(){
    ============================================================ */
 function verGaleria(){
   editando = null; rascunho = null;
-  var cartoes = lista.length ? lista.map(function(p,i){
-    var t = derivar(p.cores.brand);
+  var busca = '', ordem = 'recentes';
+  try{ ordem = localStorage.getItem('tc-ordem') || 'recentes'; }catch(e){}
+
+  function quando(p, i){
+    return p.atualizadoEm || p.criadoEm || (i + 1);   /* sem data: vale a ordem de criação */
+  }
+  function dataCurta(ms){
+    if(!ms || ms < 1e11) return '';
+    var d = new Date(ms), z = function(n){ return (n<10?'0':'')+n; };
+    return z(d.getDate())+'/'+z(d.getMonth()+1)+'/'+d.getFullYear();
+  }
+  function filtrados(){
+    var alvo = busca.trim().toLowerCase();
+    var itens = lista.map(function(p, i){ return { p: p, i: i }; });
+    if(alvo) itens = itens.filter(function(o){
+      return (o.p.cliente+' '+o.p.slug+' '+(o.p.rotulo||'')).toLowerCase().indexOf(alvo) >= 0;
+    });
+    itens.sort(function(a, b){
+      if(ordem === 'nome')     return a.p.cliente.localeCompare(b.p.cliente, 'pt');
+      if(ordem === 'nome-z')   return b.p.cliente.localeCompare(a.p.cliente, 'pt');
+      if(ordem === 'antigos')  return quando(a.p, a.i) - quando(b.p, b.i);
+      return quando(b.p, b.i) - quando(a.p, a.i);
+    });
+    return itens;
+  }
+  function cartao(p, i){
+    var t = derivar(p.cores.brand, p.cores.texto);
     var capa = p.logo
       ? '<img src="'+esc(p.logo)+'" alt="'+esc(p.cliente)+'">'
       : '<b>'+esc(p.cliente)+'</b>';
+    var dia = dataCurta(p.criadoEm);
     return '<div class="proto">'+
       '<div class="capa" style="background:'+(p.logo?'#fff':'linear-gradient(120deg,'+p.cores.brand+','+t.dark+')')+'">'+capa+'</div>'+
       '<div class="corpo"><h3>'+esc(p.cliente)+'</h3>'+
         '<div class="meta"><span class="pt" style="background:'+p.cores.brand+'"></span>'+
-          esc(p.cores.brand)+' · /'+esc(p.slug)+'</div>'+
+          esc(p.cores.brand)+' · /'+esc(p.slug)+(dia ? ' · criado em '+dia : '')+'</div>'+
         '<div class="marcas">'+
           (p.prime!==false ? '<span class="selo ok">Prime</span>' : '<span class="selo">Sem Prime</span>')+
           (p.appProprio && p.appProprio.ativo ? '<span class="selo">App próprio</span>' : '')+
@@ -996,7 +1056,7 @@ function verGaleria(){
         '<button class="b mini" data-qr="'+i+'">QR code</button>'+
         '<div class="acoes-fim"><button class="b mini perigo" data-excluir="'+i+'">Excluir</button></div>'+
       '</div></div>';
-  }).join('') : '';
+  }
 
   app.innerHTML =
    '<div class="topo"><div><h1>Protótipos por cliente</h1>'+
@@ -1006,9 +1066,23 @@ function verGaleria(){
        (TEM_API ? '<button class="b" id="btEmails">Quem pode entrar</button>'+
                   '<button class="b" id="btSair">Sair</button>' : '')+
        '<button class="b forte" id="btNovo">+ Novo protótipo</button></div></div>'+
-   (lista.length
-     ? '<div class="grade">'+cartoes+'</div>'
-     : '<div class="vazio">Nenhum protótipo ainda.<br>Comece pelo <b>+ Novo protótipo</b> — leva menos de um minuto.</div>')+
+   (lista.length ? '<div class="filtros">'+
+     '<div class="campo-busca">'+
+       '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" '+
+         'stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'+
+       '<input type="search" id="buscaProto" placeholder="Buscar por cliente ou link" autocomplete="off">'+
+     '</div>'+
+     '<label class="campo-ordem"><span>Ordenar por</span>'+
+       '<select id="ordemProto">'+
+         '<option value="recentes">Mais recentes</option>'+
+         '<option value="antigos">Mais antigos</option>'+
+         '<option value="nome">Nome (A–Z)</option>'+
+         '<option value="nome-z">Nome (Z–A)</option>'+
+       '</select></label>'+
+     '<span class="conta" id="contaProto"></span>'+
+   '</div>' : '')+
+   (lista.length ? '<div class="grade" id="grade"></div>' : '')+
+   (lista.length ? '' : '<div class="vazio">Nenhum protótipo ainda.<br>Comece pelo <b>+ Novo protótipo</b> — leva menos de um minuto.</div>')+
    (somenteLeitura ? '<div class="recado ruim" style="margin-bottom:18px">'+
       '<b>O armazenamento do projeto está indisponível.</b> Você está vendo os protótipos '+
       'que já estavam no ar e <b>não é possível salvar</b> agora — nada foi perdido. '+
@@ -1016,44 +1090,70 @@ function verGaleria(){
    (TEM_API ? '<p class="assinado">Você entrou como <b>'+esc(sessao.email)+'</b>. '+
       'Tudo o que você salvar aqui aparece para todo mundo do time.</p>' : '');
 
+  function pintaGrade(){
+    var grade = document.getElementById('grade'); if(!grade) return;
+    var itens = filtrados();
+    grade.innerHTML = itens.length
+      ? itens.map(function(o){ return cartao(o.p, o.i); }).join('')
+      : '<div class="vazio" style="grid-column:1/-1">Nenhum protótipo com <b>'+esc(busca)+'</b>.</div>';
+    document.getElementById('contaProto').textContent = itens.length === lista.length
+      ? lista.length + (lista.length === 1 ? ' protótipo' : ' protótipos')
+      : itens.length + ' de ' + lista.length;
+    ligarCartoes();
+  }
+
+  function ligarCartoes(){
+    app.querySelectorAll('[data-editar]').forEach(function(b){
+      b.onclick = function(){ var i=+b.dataset.editar; verEditor(JSON.parse(JSON.stringify(lista[i])), i); };
+    });
+    app.querySelectorAll('[data-qr]').forEach(function(b){
+      b.onclick = function(){
+        var p = lista[+b.dataset.qr];
+        try{
+          qrBaixaPNG(linkDe(p), 'qr-' + (p.slug || 'cliente'));
+          var antes = b.textContent; b.textContent = 'Baixando…';
+          setTimeout(function(){ if(b.isConnected) b.textContent = antes; }, 1600);
+        }catch(e){ alert('Não consegui gerar o QR code: ' + e.message); }
+      };
+    });
+    app.querySelectorAll('[data-link]').forEach(function(b){
+      b.onclick = function(){
+        var url = linkDe(lista[+b.dataset.link]);
+        function pronto(){
+          var antes = b.textContent; b.textContent = 'Link copiado';
+          setTimeout(function(){ if(b.isConnected) b.textContent = antes; }, 1800);
+        }
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(url).then(pronto, function(){ copiaAntiga(url, pronto); });
+        } else copiaAntiga(url, pronto);
+      };
+    });
+    app.querySelectorAll('[data-excluir]').forEach(function(b){
+      b.onclick = function(){
+        var i = +b.dataset.excluir;
+        if(b.dataset.confirmando){ lista.splice(i,1); gravar().then(verGaleria, verGaleria); return; }
+        b.dataset.confirmando = '1'; b.textContent = 'Confirmar exclusão';
+        setTimeout(function(){ if(b.isConnected){ delete b.dataset.confirmando; b.textContent='Excluir'; } }, 4000);
+      };
+    });
+  }
+
   document.getElementById('btNovo').onclick = function(){ verEditor(novoModelo(), null); };
   if(document.getElementById('btEmails')) document.getElementById('btEmails').onclick = verEmails;
   if(document.getElementById('btSair')) document.getElementById('btSair').onclick = function(){
     limparSessao(); lista = []; verLogin();
   };
-  app.querySelectorAll('[data-editar]').forEach(function(b){
-    b.onclick = function(){ var i=+b.dataset.editar; verEditor(JSON.parse(JSON.stringify(lista[i])), i); };
-  });
-  app.querySelectorAll('[data-qr]').forEach(function(b){
-    b.onclick = function(){
-      var p = lista[+b.dataset.qr];
-      try{
-        qrBaixaPNG(linkDe(p), 'qr-' + (p.slug || 'cliente'));
-        var antes = b.textContent; b.textContent = 'Baixando…';
-        setTimeout(function(){ if(b.isConnected) b.textContent = antes; }, 1600);
-      }catch(e){ alert('Não consegui gerar o QR code: ' + e.message); }
+  var cxBusca = document.getElementById('buscaProto'), cxOrdem = document.getElementById('ordemProto');
+  if(cxBusca){
+    cxOrdem.value = ordem;
+    cxBusca.oninput = function(){ busca = this.value; pintaGrade(); };
+    cxOrdem.onchange = function(){
+      ordem = this.value;
+      try{ localStorage.setItem('tc-ordem', ordem); }catch(e){}
+      pintaGrade();
     };
-  });
-  app.querySelectorAll('[data-link]').forEach(function(b){
-    b.onclick = function(){
-      var url = linkDe(lista[+b.dataset.link]);
-      function pronto(){
-        var antes = b.textContent; b.textContent = 'Link copiado';
-        setTimeout(function(){ if(b.isConnected) b.textContent = antes; }, 1800);
-      }
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(url).then(pronto, function(){ copiaAntiga(url, pronto); });
-      } else copiaAntiga(url, pronto);
-    };
-  });
-  app.querySelectorAll('[data-excluir]').forEach(function(b){
-    b.onclick = function(){
-      var i = +b.dataset.excluir;
-      if(b.dataset.confirmando){ lista.splice(i,1); gravar().then(verGaleria, verGaleria); return; }
-      b.dataset.confirmando = '1'; b.textContent = 'Confirmar exclusão';
-      setTimeout(function(){ if(b.isConnected){ delete b.dataset.confirmando; b.textContent='Excluir'; } }, 4000);
-    };
-  });
+  }
+  pintaGrade();
 }
 
 /* ============================================================
@@ -1220,51 +1320,50 @@ function ligarEditor(){
   function pintaTexto(){
     var caixa = $('textoOpcoes'); if(!caixa) return;
     var c = rascunho.cores;
-    var auto = melhorTexto(c.brand || '#0A66C2', c.paleta);
+    var brand = c.brand || '#0A66C2';
+    var auto = melhorTexto(brand, c.paleta);
     var manual = !!c.textoManual;
-    var usada = manual && c.texto ? c.texto.toUpperCase() : auto.cor;
+    var usada = (manual && c.texto ? c.texto : auto.cor).toUpperCase();
     c.texto = usada;
 
-    var explica = auto.motivo === 'propria'
-      ? 'A cor principal tem contraste suficiente — o texto usa ela mesma.'
-      : auto.motivo === 'paleta'
-        ? 'A cor principal não tem contraste para texto. Usando ' + auto.cor + ', que veio do logo/site do cliente.'
-        : 'A cor principal não tem contraste para texto e não achei outra na identidade. Escurecida para ' + auto.cor + '.';
-
-    var opcoes = [{ cor: auto.cor, rotulo: 'Automático', chave: 'auto', nota: auto.cor }];
-    (c.paleta || []).forEach(function(p){
-      if(!/^#[0-9a-f]{6}$/i.test(p)) return;
-      if(p.toUpperCase() === auto.cor) return;
-      if(opcoes.some(function(o){ return o.cor === p.toUpperCase(); })) return;
-      opcoes.push({ cor: p.toUpperCase(), rotulo: p.toUpperCase(), chave: 'paleta' });
-    });
-    opcoes.push({ cor: usada, rotulo: 'Outra cor', chave: 'manual' });
+    var opcoes = opcoesDeTexto(brand, c.paleta);
+    if(!opcoes.some(function(o){ return o.cor === auto.cor; }))
+      opcoes.unshift({ cor: auto.cor, nome: 'Sugerida', de: 'tom' });
+    if(manual && !opcoes.some(function(o){ return o.cor === usada; }))
+      opcoes.push({ cor: usada, nome: 'Sua cor', de: 'manual' });
 
     caixa.innerHTML = opcoes.map(function(o){
-      var ligada = o.chave === 'manual' ? manual : (!manual && o.cor === usada);
-      var passa  = contraste(o.cor, '#FFFFFF') >= 4.5;
-      return '<button type="button" class="texto-op' + (ligada ? ' sel' : '') + '" data-texto="' +
-        o.chave + '" data-cor="' + o.cor + '">' +
+      var ligada = o.cor === usada;
+      return '<button type="button" class="texto-op' + (ligada ? ' sel' : '') + '" data-cor="' + o.cor + '">' +
         '<i style="background:' + o.cor + '"></i><span>' +
-        '<b>' + o.rotulo + '</b>' +
-        (o.chave === 'manual' ? '' : '<small>' + (o.nota ? o.nota + ' · ' : '') +
-          (passa ? '' : 'baixo contraste · ') +
-          contraste(o.cor, '#FFFFFF').toFixed(1) + ':1</small>') +
+        '<b>' + esc(o.nome) + (o.cor === auto.cor ? ' <em>recomendada</em>' : '') + '</b>' +
+        '<small>' + o.cor + ' · ' + contraste(o.cor, '#FFFFFF').toFixed(1) + ':1</small>' +
         '</span></button>';
-    }).join('') + '<p class="ajuda" style="margin:9px 0 0;width:100%">' + esc(explica) + '</p>';
+    }).join('') +
+    '<button type="button" class="texto-op outra' + (manual ? ' sel' : '') + '" data-outra="1">' +
+      '<i style="background:' + usada + '"></i><span><b>Outra cor</b><small>escolher à mão</small></span></button>' +
+    '<p class="ajuda" style="margin:9px 0 0;width:100%">' + esc(
+      auto.motivo === 'propria'
+        ? 'A cor principal tem contraste suficiente, então a recomendada é ela mesma.'
+        : auto.motivo === 'paleta'
+          ? 'A cor principal não tem contraste para texto. A recomendada é ' + auto.cor + ', que veio do logo/site do cliente.'
+          : 'A cor principal não tem contraste para texto e não achei outra na identidade do cliente. '
+            + 'A recomendada é ' + auto.cor + ', a própria cor escurecida — escolha abaixo se preferir outra.'
+    ) + '</p>';
 
-    caixa.querySelectorAll('[data-texto]').forEach(function(b){
+    caixa.querySelectorAll('[data-cor]').forEach(function(b){
       b.onclick = function(){
-        if(b.dataset.texto === 'manual'){
-          rascunho.cores.textoManual = true;
-          if(!rascunho.cores.texto) rascunho.cores.texto = auto.cor;
-        } else {
-          rascunho.cores.textoManual = false;
-          rascunho.cores.texto = b.dataset.cor;
-        }
+        rascunho.cores.textoManual = (b.dataset.cor !== auto.cor);
+        rascunho.cores.texto = b.dataset.cor;
         sincronizaTexto();
       };
     });
+    caixa.querySelector('[data-outra]').onclick = function(){
+      rascunho.cores.textoManual = true;
+      if(!rascunho.cores.texto) rascunho.cores.texto = auto.cor;
+      sincronizaTexto();
+      $('fTexto').focus();
+    };
     $('textoManual').classList.toggle('esconde', !manual);
     $('textoAmostra').style.background = usada;
     $('fTextoPicker').value = /^#[0-9a-f]{6}$/i.test(usada) ? usada : '#000000';
@@ -1518,6 +1617,9 @@ function ligarEditor(){
     if(!rascunho.slug) rascunho.slug = apelido(rascunho.cliente);
     var conflito = lista.some(function(p,i){ return p.slug===rascunho.slug && i!==editando; });
     if(conflito){ aviso2('Já existe um protótipo com o link <code>/'+esc(rascunho.slug)+'</code>. Mude o link.','ruim'); return; }
+    var agora = Date.now();
+    if(!rascunho.criadoEm) rascunho.criadoEm = agora;
+    rascunho.atualizadoEm = agora;
     if(editando===null) lista.push(rascunho); else lista[editando] = rascunho;
     aviso2('Salvando…','info');
     gravar().then(verGaleria, function(){ aviso2('Não consegui salvar. Confira a conexão e tente de novo.','ruim'); });
