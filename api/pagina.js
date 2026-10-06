@@ -3,7 +3,7 @@
    protótipo é salvo no editor — sem gerar arquivo nenhum à mão. */
 import { lerEstado } from './_estado.js';
 
-const V = '20';
+const V = '21';
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
@@ -22,6 +22,7 @@ function documento(cfg) {
     if (cfg.cores.brandLight) cores.brandLight = cfg.cores.brandLight;
     if (cfg.cores.brandInk)   cores.brandInk   = cfg.cores.brandInk;
   }
+  if (cfg.cores && cfg.cores.texto)  cores.texto  = cfg.cores.texto;
   if (cfg.cores && cfg.cores.accent) cores.accent = cfg.cores.accent;
 
   const ap = cfg.appProprio || {};

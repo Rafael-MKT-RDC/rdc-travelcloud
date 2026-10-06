@@ -95,13 +95,60 @@ function hsl2rgb(hs){var h=hs[0]/360,s=hs[1],l=hs[2];
 function lum(c){var a=c.map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});
   return .2126*a[0]+.7152*a[1]+.0722*a[2];}
 // mesma fórmula do motor (tc.js) — se mudar lá, mude aqui
-function derivar(brand){
+function contraste(a, b){
+  var la = lum(hex2rgb(a)), lb = lum(hex2rgb(b));
+  var hi = Math.max(la, lb), lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+/* A cor da marca quando ela precisa ser lida sobre fundo claro: devolve a
+   própria cor quando ela já tem contraste, e uma versão escurecida quando não
+   tem (amarelo, laranja, verdes claros). O editor pode mandar uma cor pronta,
+   tirada do logo ou do site, e ela tem prioridade. */
+function corDeTexto(brand, escolhida){
+  if(escolhida && /^#[0-9a-f]{3,8}$/i.test(escolhida)) return escolhida.toUpperCase();
+  if(contraste(brand, '#FFFFFF') >= 4.5) return brand.toUpperCase();
+  var hsl = rgb2hsl(hex2rgb(brand)), l = hsl[2];
+  while(l > 0.04){
+    l -= 0.02;
+    var tenta = rgb2hex(hsl2rgb([hsl[0], Math.min(1, hsl[1] * 1.08), l]));
+    if(contraste(tenta, '#FFFFFF') >= 4.5) return tenta;
+  }
+  return '#14202B';
+}
+/* ---- a melhor cor da identidade para texto sobre fundo claro ----
+   Se a cor principal já tem contraste, é ela mesma. Se não tem (amarelo,
+   laranja, verdes claros), procura entre as cores do logo e do site a mais
+   característica que passe no contraste — é o que o Banco do Brasil faz:
+   fundo amarelo, texto azul. Só escurece a cor original se não achar nada. */
+function melhorTexto(brand, paleta){
+  if(contraste(brand, '#FFFFFF') >= 4.5) return { cor: brand.toUpperCase(), motivo: 'propria' };
+  var bons = (paleta || []).filter(function(c){
+    if(!/^#[0-9a-f]{6}$/i.test(c)) return false;
+    if(c.toUpperCase() === String(brand).toUpperCase()) return false;
+    var hsl = rgb2hsl(hex2rgb(c));
+    if(hsl[1] < 0.12) return false;                 /* cinza não é cor de marca */
+    return contraste(c, '#FFFFFF') >= 4.5;
+  });
+  if(bons.length){
+    bons.sort(function(a, b){ return rgb2hsl(hex2rgb(b))[1] - rgb2hsl(hex2rgb(a))[1]; });
+    return { cor: bons[0].toUpperCase(), motivo: 'paleta' };
+  }
+  return { cor: corDeTexto(brand), motivo: 'escurecida' };
+}
+function textoDoRascunho(r){
+  var c = r.cores || {};
+  if(c.textoManual && c.texto) return { cor: c.texto.toUpperCase(), motivo: 'manual' };
+  return melhorTexto(c.brand || '#0A66C2', c.paleta);
+}
+
+function derivar(brand, texto){
   var rgb=hex2rgb(brand), hsl=rgb2hsl(rgb);
   return {
     brand: brand.toUpperCase(),
     dark : rgb2hex(hsl2rgb([hsl[0], Math.min(1,hsl[1]*1.05), Math.max(.12, hsl[2]-0.13)])),
     light: rgb2hex(hsl2rgb([hsl[0], Math.min(.85,Math.max(.25,hsl[1]*0.75)), 0.945])),
-    ink  : lum(rgb) > 0.55 ? '#14202B' : '#FFFFFF'
+    ink  : lum(rgb) > 0.55 ? '#14202B' : '#FFFFFF',
+    texto: corDeTexto(brand, texto)
   };
 }
 // aceita #00AEEF, 00AEEF, 0,174,239, rgb(0 174 239)
@@ -536,7 +583,8 @@ function quebra(g, txt, larg){
 
 /* ---- a tela do portal, desenhada do zero ---- */
 function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
-  var t = derivar(cfg.cores.brand);
+  var t = derivar(cfg.cores.brand, cfg.cores.texto);
+  var corTexto = t.texto;
   var k = w / 368;                       /* a tela real tem 368 de largura */
   g.save();
   caminhoArredondado(g, x, y, w, h, 30*k); g.clip();
@@ -567,9 +615,9 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
   } else {
     /* o padrão RDC mostra o espaço reservado do logo */
     var lw = 52*k, lh = 26*k;
-    g.strokeStyle = cfg.cores.brand; g.lineWidth = 1.5*k;
+    g.strokeStyle = corTexto; g.lineWidth = 1.5*k;
     caminhoArredondado(g, cx, meio-lh/2, lw, lh, 7*k); g.stroke();
-    g.fillStyle = cfg.cores.brand;
+    g.fillStyle = corTexto;
     g.font = '700 ' + (7*k) + 'px Inter, sans-serif';
     g.textAlign = 'center';
     g.fillText('seu logo aqui', cx + lw/2, meio);
@@ -579,7 +627,7 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
   g.fillStyle = '#E9EDF2';
   g.fillRect(cx, meio - 11*k, 1*k, 22*k);
   cx += 12*k;
-  g.fillStyle = cfg.cores.brand;
+  g.fillStyle = corTexto;
   g.font = '600 ' + (16.5*k) + 'px Inter, system-ui, sans-serif';
   g.fillText(cfg.rotulo || 'Viagens', cx, meio + 1*k);
 
@@ -812,9 +860,9 @@ function montarDoc(cfg){
     corpo  = '<scr'+'ipt>window.TC_IMG='+JSON.stringify(window.TC_INLINE.img)+';window.TC='+
              JSON.stringify(tc)+';</scr'+'ipt><scr'+'ipt>'+window.TC_INLINE.js+'</scr'+'ipt>';
   } else {                                    // versão em arquivos, na pasta do projeto
-    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=20">';
+    cabeca = '<link rel="stylesheet" href="/assets/tc.css?v=21">';
     corpo  = '<scr'+'ipt>window.TC='+JSON.stringify(tc)+';</scr'+'ipt>'+
-             '<scr'+'ipt src="/assets/tc.js?v=20"></scr'+'ipt>';
+             '<scr'+'ipt src="/assets/tc.js?v=21"></scr'+'ipt>';
   }
   // a folha de fontes vai no fim: no head ela bloqueia a execução dos scripts
   var fonte = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
@@ -1059,7 +1107,7 @@ function verEditor(cfg, idx){
         '<span class="tom"><i style="background:'+t.brand+'"></i>principal '+t.brand+'</span>'+
         '<span class="tom"><i style="background:'+t.dark+'"></i>escuro '+t.dark+'</span>'+
         '<span class="tom"><i style="background:'+t.light+'"></i>claro '+t.light+'</span>'+
-        '<span class="tom"><i style="background:'+t.ink+'"></i>texto '+t.ink+'</span>'+
+        '<span class="tom"><i style="background:'+t.ink+'"></i>sobre a cor '+t.ink+'</span>'+
       '</div>'+
       '<label class="chave'+(cfg.manual?' on':'')+'" id="chManual" style="margin-top:14px">'+
         '<i></i><span>Ajustar os tons à mão</span></label>'+
@@ -1068,6 +1116,16 @@ function verEditor(cfg, idx){
         '<div class="campo2"><label>Tom claro</label><input type="text" id="fLight" value="'+(cfg.cores.brandLight||t.light)+'"></div>'+
         '<div class="campo2"><label>Texto sobre a cor</label><input type="text" id="fInk" value="'+(cfg.cores.brandInk||t.ink)+'"></div>'+
       '</div>'+
+    '</div>'+
+    '<div class="campo2"><label>Cor do texto</label>'+
+      '<p class="ajuda" style="margin:0 0 9px">A marca quando vira letra ou ícone sobre fundo branco: '+
+      'o nome do benefício no header, links, abas e seleções. Os fundos continuam na cor principal.</p>'+
+      '<div id="textoOpcoes" class="texto-opcoes"></div>'+
+      '<div class="cor-linha '+(cfg.cores.textoManual?'':'esconde')+'" id="textoManual">'+
+        '<span class="cor-amostra" id="textoAmostra"><input type="color" id="fTextoPicker"></span>'+
+        '<input type="text" id="fTexto" placeholder="#001489 ou 0,20,137">'+
+      '</div>'+
+      '<div id="textoProva" class="prova"></div>'+
     '</div>'+
     '<div id="recado" class="recado info esconde"></div></div>'+
 
@@ -1153,17 +1211,91 @@ function ligarEditor(){
       '<span class="tom"><i style="background:'+t.brand+'"></i>principal '+t.brand+'</span>'+
       '<span class="tom"><i style="background:'+t.dark+'"></i>escuro '+(rascunho.cores.brandDark||t.dark)+'</span>'+
       '<span class="tom"><i style="background:'+(rascunho.cores.brandLight||t.light)+'"></i>claro '+(rascunho.cores.brandLight||t.light)+'</span>'+
-      '<span class="tom"><i style="background:'+(rascunho.cores.brandInk||t.ink)+'"></i>texto '+(rascunho.cores.brandInk||t.ink)+'</span>';
-    document.querySelector('.cor-amostra').style.background = rascunho.cores.brand;
+      '<span class="tom"><i style="background:'+(rascunho.cores.brandInk||t.ink)+'"></i>sobre a cor '+(rascunho.cores.brandInk||t.ink)+'</span>';
+    $('fCorPicker').parentNode.style.background = rascunho.cores.brand;
     if(!rascunho.manual){ $('fDark').value=t.dark; $('fLight').value=t.light; $('fInk').value=t.ink; }
   }
+
+  /* --- Cor do texto: automático por padrão, manual quando você quiser --- */
+  function pintaTexto(){
+    var caixa = $('textoOpcoes'); if(!caixa) return;
+    var c = rascunho.cores;
+    var auto = melhorTexto(c.brand || '#0A66C2', c.paleta);
+    var manual = !!c.textoManual;
+    var usada = manual && c.texto ? c.texto.toUpperCase() : auto.cor;
+    c.texto = usada;
+
+    var explica = auto.motivo === 'propria'
+      ? 'A cor principal tem contraste suficiente — o texto usa ela mesma.'
+      : auto.motivo === 'paleta'
+        ? 'A cor principal não tem contraste para texto. Usando ' + auto.cor + ', que veio do logo/site do cliente.'
+        : 'A cor principal não tem contraste para texto e não achei outra na identidade. Escurecida para ' + auto.cor + '.';
+
+    var opcoes = [{ cor: auto.cor, rotulo: 'Automático', chave: 'auto', nota: auto.cor }];
+    (c.paleta || []).forEach(function(p){
+      if(!/^#[0-9a-f]{6}$/i.test(p)) return;
+      if(p.toUpperCase() === auto.cor) return;
+      if(opcoes.some(function(o){ return o.cor === p.toUpperCase(); })) return;
+      opcoes.push({ cor: p.toUpperCase(), rotulo: p.toUpperCase(), chave: 'paleta' });
+    });
+    opcoes.push({ cor: usada, rotulo: 'Outra cor', chave: 'manual' });
+
+    caixa.innerHTML = opcoes.map(function(o){
+      var ligada = o.chave === 'manual' ? manual : (!manual && o.cor === usada);
+      var passa  = contraste(o.cor, '#FFFFFF') >= 4.5;
+      return '<button type="button" class="texto-op' + (ligada ? ' sel' : '') + '" data-texto="' +
+        o.chave + '" data-cor="' + o.cor + '">' +
+        '<i style="background:' + o.cor + '"></i><span>' +
+        '<b>' + o.rotulo + '</b>' +
+        (o.chave === 'manual' ? '' : '<small>' + (o.nota ? o.nota + ' · ' : '') +
+          (passa ? '' : 'baixo contraste · ') +
+          contraste(o.cor, '#FFFFFF').toFixed(1) + ':1</small>') +
+        '</span></button>';
+    }).join('') + '<p class="ajuda" style="margin:9px 0 0;width:100%">' + esc(explica) + '</p>';
+
+    caixa.querySelectorAll('[data-texto]').forEach(function(b){
+      b.onclick = function(){
+        if(b.dataset.texto === 'manual'){
+          rascunho.cores.textoManual = true;
+          if(!rascunho.cores.texto) rascunho.cores.texto = auto.cor;
+        } else {
+          rascunho.cores.textoManual = false;
+          rascunho.cores.texto = b.dataset.cor;
+        }
+        sincronizaTexto();
+      };
+    });
+    $('textoManual').classList.toggle('esconde', !manual);
+    $('textoAmostra').style.background = usada;
+    $('fTextoPicker').value = /^#[0-9a-f]{6}$/i.test(usada) ? usada : '#000000';
+    if(document.activeElement !== $('fTexto')) $('fTexto').value = usada;
+    pintaProva(usada);
+  }
+  function pintaProva(cor){
+    var caixa = $('textoProva'); if(!caixa) return;
+    var brand = rascunho.cores.brand || '#0A66C2';
+    var t = derivar(brand, cor);
+    var casos = [
+      { nome: 'Texto da marca no branco', fundo: '#FFFFFF', frente: cor },
+      { nome: 'Texto sobre a cor principal', fundo: brand, frente: t.ink },
+      { nome: 'Texto comum no branco', fundo: '#FFFFFF', frente: '#171B21' }
+    ];
+    caixa.innerHTML = casos.map(function(k){
+      var r = contraste(k.frente, k.fundo), ok = r >= 4.5;
+      return '<span class="prova-item' + (ok ? ' ok' : ' nao') + '" style="background:' + k.fundo +
+        ';color:' + k.frente + '">Viagens<small>' + (ok ? '✓ ' : '✕ ') + r.toFixed(1) + ':1</small></span>';
+    }).join('') + '<p class="ajuda" style="margin:8px 0 0;width:100%">Mínimo legível: 4,5:1. ' +
+      'Abaixo disso o protótipo ainda abre, mas o texto some em tela de celular.</p>';
+  }
+  function sincronizaTexto(){ pintaTexto(); atualizarPrevia(); pintaMock(); }
+
   function aplicarCor(txt, origem){
     var c = lerCor(txt);
     if(!c){ if(origem!=='digitando') aviso('Não reconheci essa cor. Use <code>#00AEEF</code> ou <code>0,174,239</code>.','ruim'); return false; }
     rascunho.cores.brand = c;
     $('fCorPicker').value = c;
     if(origem!=='campo') $('fCor').value = c;
-    repintarTons(); atualizarPrevia(); pintaMock(); return true;
+    repintarTons(); pintaTexto(); atualizarPrevia(); pintaMock(); return true;
   }
 
   $('btVoltar').onclick = verGaleria;
@@ -1222,6 +1354,19 @@ function ligarEditor(){
   };
   $('fRotulo').oninput = function(){ rascunho.rotulo = this.value; atualizarPrevia(); pintaMock(); };
 
+
+  pintaTexto();
+  $('fTexto').oninput = function(){
+    var c = lerCor(this.value); if(!c) return;
+    rascunho.cores.textoManual = true; rascunho.cores.texto = c;
+    $('textoAmostra').style.background = c; $('fTextoPicker').value = c;
+    pintaProva(c); atualizarPrevia(); pintaMock();
+  };
+  $('fTexto').onchange = function(){ sincronizaTexto(); };
+  $('fTextoPicker').oninput = function(){
+    rascunho.cores.textoManual = true; rascunho.cores.texto = this.value.toUpperCase();
+    $('fTexto').value = this.value.toUpperCase(); sincronizaTexto();
+  };
   $('fCor').oninput  = function(){ aplicarCor(this.value,'digitando'); };
   $('fCor').onchange = function(){ aplicarCor(this.value,'campo'); };
   $('fCorPicker').oninput = function(){ aplicarCor(this.value,'seletor'); };
@@ -1268,6 +1413,8 @@ function ligarEditor(){
     var caixa = $('coresLogo'); if(!caixa) return;
     caixa.innerHTML = '<p class="dica" style="margin:0">Lendo as cores do logo…</p>';
     coresDoLogo(url, function(cores){
+      rascunho.cores.paleta = cores.slice(0, 10);
+      if(typeof pintaTexto === 'function') pintaTexto();
       if(!cores.length){
         caixa.innerHTML = '<p class="dica" style="margin:0">Não consegui ler cores deste arquivo. '+
           'Escolha a cor principal abaixo.</p>';
@@ -1333,8 +1480,8 @@ function ligarEditor(){
     atualizarPrevia(); pintaMock();
   };
   function desenharAlvo(){
-    var h = rascunho.appProprio.hotspot, a = $('alvo');
-    if(!a) return;
+    var h = (rascunho.appProprio || {}).hotspot, a = $('alvo');
+    if(!a || !h) return;
     a.style.cssText = 'left:'+h.x+'%;top:'+h.y+'%;width:'+h.w+'%;height:'+h.h+'%';
   }
   var mapa = $('mapa'), arrastando=false, ax=0, ay=0;

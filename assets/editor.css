@@ -292,3 +292,21 @@ code{background:var(--panel-2);border-radius:5px;padding:2px 6px;font-size:12.5p
   .mock-caixa canvas{max-width:220px}
   .mock-lado{flex:1 1 100%}
 }
+
+/* --- Cor do texto: escolha e prova de legibilidade --- */
+.texto-opcoes{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.texto-op{display:flex;align-items:center;gap:9px;background:var(--panel);cursor:pointer;
+  border:1.5px solid var(--line);border-radius:11px;padding:8px 12px 8px 9px;font:inherit;color:var(--ink)}
+.texto-op:hover{border-color:var(--ink-3)}
+.texto-op.sel{border-color:var(--live);box-shadow:0 0 0 2px color-mix(in srgb,var(--live) 22%,transparent)}
+.texto-op i{width:20px;height:20px;border-radius:6px;flex:0 0 auto;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+.texto-op b{font-size:13px;font-weight:600;line-height:1.2}
+.texto-op small{display:block;font-size:11px;color:var(--ink-3);line-height:1.2;margin-top:2px}
+.texto-op b+small,.texto-op small{margin-left:0}
+.texto-op>span{display:flex;flex-direction:column}
+.prova{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.prova-item{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:132px;
+  border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:16px;font-weight:700}
+.prova-item small{font-size:11px;font-weight:600;opacity:.85}
+.prova-item.nao{border-color:#E4572E}

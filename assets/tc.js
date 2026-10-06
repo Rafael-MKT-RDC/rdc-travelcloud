@@ -29,22 +29,44 @@ function hsl2rgb(hs){var h=hs[0]/360,s=hs[1],l=hs[2];
 function lum(c){var a=c.map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});
   return .2126*a[0]+.7152*a[1]+.0722*a[2];}
 
-function derivar(brand){
+function contraste(a, b){
+  var la = lum(hex2rgb(a)), lb = lum(hex2rgb(b));
+  var hi = Math.max(la, lb), lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+/* A cor da marca quando ela precisa ser lida sobre fundo claro: devolve a
+   própria cor quando ela já tem contraste, e uma versão escurecida quando não
+   tem (amarelo, laranja, verdes claros). O editor pode mandar uma cor pronta,
+   tirada do logo ou do site, e ela tem prioridade. */
+function corDeTexto(brand, escolhida){
+  if(escolhida && /^#[0-9a-f]{3,8}$/i.test(escolhida)) return escolhida.toUpperCase();
+  if(contraste(brand, '#FFFFFF') >= 4.5) return brand.toUpperCase();
+  var hsl = rgb2hsl(hex2rgb(brand)), l = hsl[2];
+  while(l > 0.04){
+    l -= 0.02;
+    var tenta = rgb2hex(hsl2rgb([hsl[0], Math.min(1, hsl[1] * 1.08), l]));
+    if(contraste(tenta, '#FFFFFF') >= 4.5) return tenta;
+  }
+  return '#14202B';
+}
+function derivar(brand, texto){
   var rgb=hex2rgb(brand), hsl=rgb2hsl(rgb);
   return {
     brand: brand.toUpperCase(),
     dark : rgb2hex(hsl2rgb([hsl[0], Math.min(1,hsl[1]*1.05), Math.max(.12, hsl[2]-0.13)])),
     light: rgb2hex(hsl2rgb([hsl[0], Math.min(.85,Math.max(.25,hsl[1]*0.75)), 0.945])),
-    ink  : lum(rgb) > 0.55 ? '#14202B' : '#FFFFFF'
+    ink  : lum(rgb) > 0.55 ? '#14202B' : '#FFFFFF',
+    texto: corDeTexto(brand, texto)
   };
 }
 C.cores = C.cores || {};
-var P = derivar(C.cores.brand || '#0A66C2');
+var P = derivar(C.cores.brand || '#0A66C2', C.cores.texto);
 var TH = {
   '--brand'      : C.cores.brand      || P.brand,
   '--brand-dark' : C.cores.brandDark  || P.dark,
   '--brand-light': C.cores.brandLight || P.light,
   '--brand-ink'  : C.cores.brandInk   || P.ink,
+  '--brand-texto': P.texto,
   '--accent'     : C.cores.accent     || '#FF9100'
 };
 Object.keys(TH).forEach(function(k){document.documentElement.style.setProperty(k,TH[k])});
