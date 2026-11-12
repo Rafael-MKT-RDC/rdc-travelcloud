@@ -584,6 +584,23 @@ function qrBaixaSVG(texto, nome){
 var MOCK_HERO = '/assets/img/hero-home.jpg';
 var MOCK_RDC  = '/assets/img/rdc.svg';
 
+/* As quatro categorias da home do protótipo. O desenho vem do mesmo SVG que o
+   motor usa; aqui ele é pintado na cor de texto da marca. */
+var MOCK_CATS = [
+  { n:"Hospedagens", breve:false, svg:"<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M20.7905 5.0085C20.0369 4.35438 19.0754 3.99638 18.0821 4.00003H5.91793C4.80457 4.00633 3.73858 4.45612 2.9513 5.25179C2.16403 6.04745 1.71898 7.1248 1.71274 8.25002V12.0918C1.25199 12.7436 1.00294 13.5239 1 14.3249V20.2797C1.00595 20.4688 1.08295 20.6486 1.21534 20.7824C1.34774 20.9162 1.5256 20.994 1.71274 21C1.90177 21 2.08306 20.9241 2.21673 20.789C2.35039 20.6539 2.42549 20.4707 2.42549 20.2797V17.4463H21.5745V20.2797C21.5745 20.4707 21.6496 20.6539 21.7833 20.789C21.9169 20.9241 22.0982 21 22.2873 21C22.4744 20.994 22.6523 20.9162 22.7847 20.7824C22.9171 20.6486 22.9941 20.4688 23 20.2797V14.3249C22.9971 13.5239 22.748 12.7436 22.2873 12.0918V8.25002C22.2859 7.63224 22.1512 7.02219 21.8928 6.46236C21.6343 5.90253 21.2581 5.40639 20.7905 5.0085ZM4.11231 6.11302C4.61579 5.6788 5.25605 5.4404 5.91793 5.4407H18.0821C18.4471 5.4407 18.8086 5.51337 19.1458 5.65455C19.4831 5.79573 19.7895 6.00266 20.0476 6.26353C20.3057 6.5244 20.5105 6.8341 20.6502 7.17494C20.7899 7.51578 20.8618 7.8811 20.8618 8.25002V10.8913C20.4668 10.6916 20.0409 10.5616 19.6026 10.5071V9.25849C19.6026 8.74904 19.4023 8.26045 19.0459 7.90021C18.6895 7.53997 18.206 7.33759 17.7019 7.33759H14.7559C14.2519 7.33759 13.7684 7.53997 13.412 7.90021C13.0555 8.26045 12.8553 8.74904 12.8553 9.25849V10.4831H11.1447V9.25849C11.1447 8.74904 10.9445 8.26045 10.588 7.90021C10.2316 7.53997 9.74814 7.33759 9.24406 7.33759H6.29806C5.79397 7.33759 5.31054 7.53997 4.95409 7.90021C4.59765 8.26045 4.39741 8.74904 4.39741 9.25849V10.5071C3.95908 10.5616 3.53321 10.6916 3.13823 10.8913V8.25002C3.13807 7.84382 3.22508 7.44242 3.39324 7.07349C3.56141 6.70456 3.80674 6.37687 4.11231 6.11302ZM18.1771 10.4831H14.2808V9.25849C14.2808 9.13113 14.3308 9.00898 14.4199 8.91892C14.5091 8.82886 14.6299 8.77827 14.7559 8.77827H17.7019C17.828 8.77827 17.9488 8.82886 18.0379 8.91892C18.127 9.00898 18.1771 9.13113 18.1771 9.25849V10.4831ZM9.71922 10.4831H5.82289V9.25849C5.82289 9.13113 5.87296 9.00898 5.96207 8.91892C6.05118 8.82886 6.17204 8.77827 6.29806 8.77827H9.24406C9.37008 8.77827 9.49094 8.82886 9.58005 8.91892C9.66916 9.00898 9.71922 9.13113 9.71922 9.25849V10.4831ZM2.42549 16.0057V14.3249C2.4234 13.7219 2.64362 13.1398 3.0432 12.6921H3.06695C3.28395 12.4514 3.54803 12.2588 3.84248 12.1265C4.13692 11.9943 4.45532 11.9252 4.77754 11.9237H19.2225C19.5447 11.9252 19.8631 11.9943 20.1575 12.1265C20.452 12.2588 20.716 12.4514 20.933 12.6921H20.9568C21.3589 13.1286 21.58 13.7045 21.5745 14.3009V15.9816L2.42549 16.0057Z\"/></svg>" },
+  { n:"Passagens", breve:false, svg:"<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M9.57892 2.53469L8.86967 2.71201L11.4426 10.4308H5.4774L3.9774 7.93083H2.17668L4.26001 11.6808L2.17668 15.4308H3.9774L5.4774 12.9308H11.4426L8.86967 20.6497L9.57892 20.827L14.486 13.6894C14.8125 13.2145 15.3518 12.9308 15.9281 12.9308H20.902C21.5924 12.9308 22.152 12.3712 22.152 11.6808C22.152 10.9905 21.5924 10.4308 20.902 10.4308H15.9281C15.3518 10.4308 14.8125 10.1471 14.486 9.67226L9.57892 2.53469ZM9.38346 1.03739C9.88961 0.910857 10.4211 1.11199 10.7167 1.54191L15.7221 8.82246C15.7687 8.8903 15.8457 8.93083 15.9281 8.93083H20.902C22.4208 8.93083 23.652 10.162 23.652 11.6808C23.652 13.1996 22.4208 14.4308 20.902 14.4308H15.9281C15.8457 14.4308 15.7687 14.4714 15.7221 14.5392L10.7167 21.8197C10.4211 22.2497 9.88961 22.4508 9.38346 22.3243L8.24396 22.0394C7.53756 21.8628 7.13102 21.1222 7.36127 20.4314L9.36147 14.4308H6.32668L5.19081 16.324C4.96491 16.7005 4.55802 16.9308 4.11895 16.9308H1.7518C0.798693 16.9308 0.196232 15.9069 0.659101 15.0738L2.54407 11.6808L0.659102 8.28789C0.196233 7.45472 0.798692 6.43083 1.7518 6.43083H4.11895C4.55802 6.43083 4.96491 6.6612 5.19081 7.03771L6.32668 8.93083H9.36147L7.36127 2.93023C7.13102 2.23946 7.53756 1.49887 8.24396 1.32227L9.38346 1.03739Z\"/></svg>" },
+  { n:"Aluguel de Carros", breve:true, svg:"<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M5 14C5 13.5858 5.33579 13.25 5.75 13.25H8.25C8.66421 13.25 9 13.5858 9 14C9 14.4142 8.66421 14.75 8.25 14.75H5.75C5.33579 14.75 5 14.4142 5 14Z\"/><path d=\"M15 14C15 13.5858 15.3358 13.25 15.75 13.25H18.25C18.6642 13.25 19 13.5858 19 14C19 14.4142 18.6642 14.75 18.25 14.75H15.75C15.3358 14.75 15 14.4142 15 14Z\"/><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M8.012 3.25C6.50267 3.25 5.19091 4.28991 4.84764 5.76052C4.84373 5.77726 4.8404 5.79413 4.83765 5.8111L4.30896 9.07556L2.26657 8.29898C1.8794 8.15177 1.4462 8.3463 1.29899 8.73347C1.15177 9.12064 1.3463 9.55384 1.73347 9.70105L2.67364 10.0585C1.80635 10.7454 1.25 11.8077 1.25 13V18.75C1.25 19.8542 2.14579 20.75 3.25 20.75H5.5C6.74221 20.75 7.75 19.7422 7.75 18.5V18.25H16.25V18.5C16.25 19.7422 17.2578 20.75 18.5 20.75H20.75C21.8542 20.75 22.75 19.8542 22.75 18.75V13C22.75 11.8082 22.1942 10.7463 21.3275 10.0595L22.2675 9.70072C22.6544 9.55301 22.8484 9.11956 22.7007 8.73258C22.553 8.34559 22.1196 8.15162 21.7326 8.29932L19.748 9.0568C19.7522 9.00119 19.7502 8.94425 19.7414 8.88677L19.2814 5.87477C19.2793 5.86111 19.2769 5.8475 19.274 5.83397C18.9582 4.32899 17.6312 3.25 16.092 3.25H8.012ZM18.2927 9.25C18.2774 9.20635 18.2658 9.16065 18.2586 9.11323L17.802 6.12352C17.6249 5.32218 16.9145 4.75 16.092 4.75H8.012C7.20719 4.75 6.50675 5.29932 6.31387 6.07861L5.80025 9.25H18.2927ZM2.75 13C2.75 11.7572 3.75721 10.75 5 10.75H19C20.2428 10.75 21.25 11.7572 21.25 13V18.75C21.25 19.0258 21.0258 19.25 20.75 19.25H18.5C18.0862 19.25 17.75 18.9138 17.75 18.5V17.5C17.75 17.0858 17.4142 16.75 17 16.75H7C6.58579 16.75 6.25 17.0858 6.25 17.5V18.5C6.25 18.9138 5.91379 19.25 5.5 19.25H3.25C2.97421 19.25 2.75 19.0258 2.75 18.75V13Z\"/></svg>" },
+  { n:"Monte sua Viagem", breve:true, svg:"<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.25002 4.00006C7.25002 2.48085 8.4808 1.25006 10 1.25006H14C15.5192 1.25006 16.75 2.48085 16.75 4.00006V6.25006H17C18.5192 6.25006 19.75 7.48085 19.75 9.00006V19.0001C19.75 20.5193 18.5192 21.7501 17 21.7501H16.75V22.0001C16.75 22.4143 16.4142 22.7501 16 22.7501C15.5858 22.7501 15.25 22.4143 15.25 22.0001V21.7501H8.75002V22.0001C8.75002 22.4143 8.41423 22.7501 8.00002 22.7501C7.5858 22.7501 7.25002 22.4143 7.25002 22.0001V21.7501H7.00002C5.4808 21.7501 4.25002 20.5193 4.25002 19.0001V9.00006C4.25002 7.48085 5.4808 6.25006 7.00002 6.25006H7.25002V4.00006ZM15.25 4.00006C15.25 3.30927 14.6908 2.75006 14 2.75006H10C9.30923 2.75006 8.75002 3.30927 8.75002 4.00006V6.25006H15.25V4.00006ZM16 7.75006H8.00002H7.00002C6.30923 7.75006 5.75002 8.30927 5.75002 9.00006V19.0001C5.75002 19.6908 6.30923 20.2501 7.00002 20.2501H8.00002H16H17C17.6908 20.2501 18.25 19.6908 18.25 19.0001V9.00006C18.25 8.30927 17.6908 7.75006 17 7.75006H16ZM10 9.25006H14C14.4142 9.25006 14.75 9.58585 14.75 10.0001C14.75 10.4143 14.4142 10.7501 14 10.7501H10C9.5858 10.7501 9.25002 10.4143 9.25002 10.0001C9.25002 9.58585 9.5858 9.25006 10 9.25006ZM12.75 13.0001C12.75 12.5858 12.4142 12.2501 12 12.2501C11.5858 12.2501 11.25 12.5858 11.25 13.0001V18.0001C11.25 18.4143 11.5858 18.7501 12 18.7501C12.4142 18.7501 12.75 18.4143 12.75 18.0001V13.0001ZM8.00002 12.2501C7.5858 12.2501 7.25002 12.5858 7.25002 13.0001V18.0001C7.25002 18.4143 7.5858 18.7501 8.00002 18.7501C8.41423 18.7501 8.75002 18.4143 8.75002 18.0001V13.0001C8.75002 12.5858 8.41423 12.2501 8.00002 12.2501ZM16.75 13.0001C16.75 12.5858 16.4142 12.2501 16 12.2501C15.5858 12.2501 15.25 12.5858 15.25 13.0001V18.0001C15.25 18.4143 15.5858 18.7501 16 18.7501C16.4142 18.7501 16.75 18.4143 16.75 18.0001V13.0001Z\"/></svg>" }
+];
+function iconeCategoria(svg, cor){
+  /* o ícone vive embutido no HTML do protótipo e por isso não declara xmlns;
+     como imagem solta, sem ele o navegador recusa o SVG */
+  var pronto = svg.replace(/currentColor/g, cor);
+  if(pronto.indexOf('xmlns') < 0)
+    pronto = pronto.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(pronto);
+}
+
 function carregaImagem(src){
   return new Promise(function(ok){
     if(!src){ ok(null); return; }
@@ -616,7 +633,7 @@ function quebra(g, txt, larg){
 }
 
 /* ---- a tela do portal, desenhada do zero ---- */
-function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
+function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones){
   var t = derivar(cfg.cores.brand, cfg.cores.texto);
   var corTexto = t.texto;
   var k = w / 368;                       /* a tela real tem 368 de largura */
@@ -672,20 +689,45 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
   g.beginPath(); g.arc(ax, meio - 3*k, 4.2*k, 0, 7); g.stroke();
   g.beginPath(); g.arc(ax, meio + 9*k, 8*k, Math.PI*1.15, Math.PI*1.85); g.stroke();
 
-  /* faixa da marca com a busca */
-  var yBusca = yCab + hCab, hBusca = 70*k;
-  g.fillStyle = cfg.cores.brand; g.fillRect(x, yBusca, w, hBusca);
-  var px = x + 16*k, pw = w - 32*k, ph = 46*k, py = yBusca + (hBusca - ph)/2;
-  g.fillStyle = '#FFFFFF'; caminhoArredondado(g, px, py, pw, ph, ph/2); g.fill();
-  g.strokeStyle = '#8B95A2'; g.lineWidth = 2*k;
-  g.beginPath(); g.arc(px + 26*k, py + ph/2, 7*k, 0, 7); g.stroke();
-  g.beginPath(); g.moveTo(px + 31*k, py + ph/2 + 5*k); g.lineTo(px + 36*k, py + ph/2 + 10*k); g.stroke();
-  g.fillStyle = '#8B95A2';
-  g.font = '500 ' + (13.5*k) + 'px Inter, system-ui, sans-serif';
-  g.fillText('Buscar Hospedagens', px + 48*k, py + ph/2 + 1*k);
+  /* faixa da marca com as categorias (16 + 48 do tile + 7 + 29 do rótulo + 18) */
+  var ink = (cfg.cores && cfg.cores.brandInk) || t.ink;
+  var rgbInk = hex2rgb(ink).join(',');
+  var yCat = yCab + hCab, hCat = 118*k;
+  g.fillStyle = cfg.cores.brand; g.fillRect(x, yCat, w, hCat);
+  var colunas = MOCK_CATS.length, padLado = 12*k, vao = 8*k;
+  var largCol = (w - padLado*2 - vao*(colunas-1)) / colunas;
+  var ladoIc = 48*k, yTile = yCat + 16*k;
+  for(var ci = 0; ci < colunas; ci++){
+    var cat = MOCK_CATS[ci];
+    var meioCol = x + padLado + ci*(largCol + vao) + largCol/2;
+    g.globalAlpha = cat.breve ? 0.7 : 1;
+    g.fillStyle = 'rgba(' + rgbInk + ',0.12)';
+    caminhoArredondado(g, meioCol - ladoIc/2, yTile, ladoIc, ladoIc, 16*k); g.fill();
+    var im = icones && icones[ci];
+    if(im) g.drawImage(im, meioCol - 12*k, yTile + ladoIc/2 - 12*k, 24*k, 24*k);
+    g.fillStyle = ink;
+    g.font = '500 ' + (11.5*k) + 'px Inter, system-ui, sans-serif';
+    g.textAlign = 'center';
+    var linhasCat = quebra(g, cat.n, largCol);
+    for(var li = 0; li < linhasCat.length; li++)
+      g.fillText(linhasCat[li], meioCol, yTile + ladoIc + 14*k + li*14.5*k);
+    g.globalAlpha = 1;
+    if(cat.breve){
+      /* o selo não apaga junto: quem apaga é só o ícone e o rótulo */
+      g.font = '700 ' + (8.5*k) + 'px Inter, system-ui, sans-serif';
+      var larguraSelo = g.measureText('em breve').width + 12*k, alturaSelo = 15*k;
+      var ySelo = yTile - 9*k;
+      g.fillStyle = '#FFFFFF';
+      caminhoArredondado(g, meioCol - larguraSelo/2, ySelo, larguraSelo, alturaSelo, alturaSelo/2);
+      g.fill();
+      g.fillStyle = '#4A5866';
+      g.fillText('em breve', meioCol, ySelo + alturaSelo/2 + 0.5*k);
+    }
+    g.textAlign = 'left';
+  }
 
   /* foto com a chamada */
-  var yFoto = yBusca + hBusca, hRodape = 86*k;
+  var yFoto = yCat + hCat, hRodape = 86*k;
   var hFoto = (y + h) - yFoto - hRodape;
   if(hero){
     var escala = Math.max(w / hero.width, hFoto / hero.height);
@@ -721,7 +763,7 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys){
   g.beginPath(); g.moveTo(x, yR); g.lineTo(x+w, yR); g.stroke();
   g.fillStyle = '#8B95A2';
   g.font = '400 ' + (10.5*k) + 'px Inter, system-ui, sans-serif';
-  g.fillText('© 2026 RDC Viagens.', x + 16*k, yR + 20*k);
+  g.fillText('©RDC Viagens', x + 16*k, yR + 20*k);
   g.fillText('Todos os direitos reservados.', x + 16*k, yR + 34*k);
   g.fillStyle = '#626C78';
   g.font = '400 ' + (10.5*k) + 'px Inter, system-ui, sans-serif';
@@ -823,14 +865,19 @@ function inclinado(g, x, y, w, h, ang, desenha){
 /* ---- monta a cena e devolve o canvas pronto ---- */
 function montaMockup(cfg, escala, feito){
   var comApp = !!(cfg.appProprio && cfg.appProprio.ativo && cfg.appProprio.imagem);
+  var tonsMock = derivar(cfg.cores.brand, cfg.cores.texto);
+  var inkMock = (cfg.cores && cfg.cores.brandInk) || tonsMock.ink;
   Promise.all([
     carregaImagem(cfg.logo || null),
     carregaImagem(MOCK_HERO),
     carregaImagem(MOCK_RDC),
     comApp ? carregaImagem(cfg.appProprio.imagem) : Promise.resolve(null),
-    carregaImagem(MOCK_STATUS)
+    carregaImagem(MOCK_STATUS),
+    Promise.all(MOCK_CATS.map(function(c){
+      return carregaImagem(iconeCategoria(c.svg, inkMock));
+    }))
   ]).then(function(r){
-    var logo = r[0], hero = r[1], rdc = r[2], app = r[3], sys = r[4];
+    var logo = r[0], hero = r[1], rdc = r[2], app = r[3], sys = r[4], icones = r[5];
     var c = document.createElement('canvas');
     var g = c.getContext('2d');
     var larguraFrente = 300 * escala;
@@ -856,7 +903,7 @@ function montaMockup(cfg, escala, feito){
       /* primeiro o de trás: o portal padrão */
       inclinado(g, xFundo, yFundo, cheiaFundo, alturaFundo, angFundo, function(){
         aparelho(g, xFundo, yFundo, larguraFundo, function(x,y,w,h){
-          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys);
+          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones);
         });
       });
       /* por cima, a home do app do cliente */
@@ -870,7 +917,7 @@ function montaMockup(cfg, escala, feito){
       c.width  = Math.round(margem*2 + larguraFrente*1.07);
       c.height = Math.round(margem*2 + altura);
       aparelho(g, margem, margem, larguraFrente, function(x,y,w,h){
-        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys);
+        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones);
       });
     }
     feito(c, comApp && !!app);
