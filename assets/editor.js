@@ -584,6 +584,8 @@ function qrBaixaSVG(texto, nome){
 var MOCK_HERO = '/assets/img/hero-home.jpg';
 var MOCK_RDC  = '/assets/img/rdc.svg';
 
+var MOCK_IC_AJUDA = "<svg width=\"30\" height=\"30\" viewBox=\"0 0 40 40\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M8.84621 32.5C8.00432 32.5 7.29171 32.2083 6.70838 31.625C6.12504 31.0416 5.83337 30.329 5.83337 29.4871V18.3333C5.83337 16.3846 6.20518 14.5513 6.94879 12.8334C7.69237 11.1154 8.70732 9.61329 9.99362 8.32696C11.28 7.04065 12.7821 6.02571 14.5 5.28212C16.218 4.53851 18.0513 4.16671 20 4.16671C21.9487 4.16671 23.782 4.53851 25.5 5.28212C27.2179 6.02571 28.72 7.04065 30.0064 8.32696C31.2927 9.61329 32.3076 11.1154 33.0512 12.8334C33.7948 14.5513 34.1666 16.3846 34.1666 18.3333V33.9743C34.1666 34.8162 33.875 35.5288 33.2916 36.1121C32.7083 36.6954 31.9957 36.9871 31.1538 36.9871H21.25C20.8953 36.9871 20.5983 36.8674 20.359 36.6281C20.1197 36.3888 20 36.0918 20 35.7371C20 35.3824 20.1197 35.0854 20.359 34.8461C20.5983 34.6068 20.8953 34.4871 21.25 34.4871H31.1538C31.3034 34.4871 31.4263 34.439 31.5224 34.3429C31.6186 34.2467 31.6667 34.1238 31.6667 33.9743V32.4999H28.7821C27.9509 32.4999 27.241 32.2056 26.6523 31.6169C26.0636 31.0282 25.7693 30.3183 25.7693 29.4871V23.7179C25.7693 22.8868 26.0636 22.1768 26.6523 21.5881C27.241 20.9995 27.9509 20.7051 28.7821 20.7051H31.6667V18.3333C31.6667 15.1111 30.5278 12.3611 28.25 10.0833C25.9722 7.80556 23.2222 6.66667 20 6.66667C16.7778 6.66667 14.0278 7.80556 11.75 10.0833C9.47222 12.3611 8.33333 15.1111 8.33333 18.3333V20.7052H11.2179C12.0491 20.7052 12.759 20.9995 13.3477 21.5882C13.9364 22.1769 14.2307 22.8868 14.2307 23.718V29.4871C14.2307 30.3183 13.9364 31.0283 13.3477 31.6169C12.759 32.2056 12.0491 32.5 11.2179 32.5H8.84621ZM8.84621 30H11.2179C11.3675 30 11.4904 29.9519 11.5865 29.8557C11.6827 29.7596 11.7308 29.6367 11.7308 29.4871V23.718C11.7308 23.5684 11.6827 23.4455 11.5865 23.3494C11.4904 23.2532 11.3675 23.2051 11.2179 23.2051H8.33333V29.4871C8.33333 29.6367 8.38142 29.7596 8.47758 29.8557C8.57375 29.9519 8.69663 30 8.84621 30ZM28.7821 30H31.6667V23.2051H28.7821C28.6325 23.2051 28.5096 23.2532 28.4135 23.3494C28.3173 23.4455 28.2692 23.5684 28.2692 23.718V29.4871C28.2692 29.6367 28.3173 29.7596 28.4135 29.8557C28.5096 29.9519 28.6325 30 28.7821 30ZM28.7821 23.2051H28.2692H31.6667H28.7821Z\"/></svg>";
+var MOCK_IC_ZAP   = "<svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M10.08 0C4.48 0 0 4.47067 0 10.059C0 12.1347 0.639995 14.37 1.92 15.9667L1.12 19.639L4.96001 18.681C9.76001 21.3954 15.84 19.7987 18.72 15.0087C19.68 13.412 20 11.8153 20 10.059C20 4.47067 15.52 0 10.08 0ZM14.88 13.891L14.4 14.37C13.92 14.849 13.28 15.0087 12.64 15.0087C6.23999 14.0507 5.12001 9.42035 4.96001 7.50435C4.96001 6.86568 5.12 6.22701 5.6 5.90768L6.23999 5.26901C6.55999 4.94967 7.2 4.94967 7.52 5.26901L8.8 6.54634C9.12 6.86567 9.12 7.50435 8.8 7.82368L8.16001 8.46235C8.00001 8.62201 8 8.94135 8 9.10102C8.48 10.538 9.76 11.8154 11.2 12.2944C11.36 12.454 11.68 12.2943 11.84 12.1347L12.48 11.496C12.8 11.1767 13.44 11.1767 13.76 11.496L15.04 12.7734C15.2 12.933 15.2 13.5717 14.88 13.891Z\"/></svg>";
 /* As quatro categorias da home do protótipo. O desenho vem do mesmo SVG que o
    motor usa; aqui ele é pintado na cor de texto da marca. */
 var MOCK_CATS = [
@@ -592,7 +594,7 @@ var MOCK_CATS = [
   { n:"Aluguel de Carros", breve:true, svg:"<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M5 14C5 13.5858 5.33579 13.25 5.75 13.25H8.25C8.66421 13.25 9 13.5858 9 14C9 14.4142 8.66421 14.75 8.25 14.75H5.75C5.33579 14.75 5 14.4142 5 14Z\"/><path d=\"M15 14C15 13.5858 15.3358 13.25 15.75 13.25H18.25C18.6642 13.25 19 13.5858 19 14C19 14.4142 18.6642 14.75 18.25 14.75H15.75C15.3358 14.75 15 14.4142 15 14Z\"/><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M8.012 3.25C6.50267 3.25 5.19091 4.28991 4.84764 5.76052C4.84373 5.77726 4.8404 5.79413 4.83765 5.8111L4.30896 9.07556L2.26657 8.29898C1.8794 8.15177 1.4462 8.3463 1.29899 8.73347C1.15177 9.12064 1.3463 9.55384 1.73347 9.70105L2.67364 10.0585C1.80635 10.7454 1.25 11.8077 1.25 13V18.75C1.25 19.8542 2.14579 20.75 3.25 20.75H5.5C6.74221 20.75 7.75 19.7422 7.75 18.5V18.25H16.25V18.5C16.25 19.7422 17.2578 20.75 18.5 20.75H20.75C21.8542 20.75 22.75 19.8542 22.75 18.75V13C22.75 11.8082 22.1942 10.7463 21.3275 10.0595L22.2675 9.70072C22.6544 9.55301 22.8484 9.11956 22.7007 8.73258C22.553 8.34559 22.1196 8.15162 21.7326 8.29932L19.748 9.0568C19.7522 9.00119 19.7502 8.94425 19.7414 8.88677L19.2814 5.87477C19.2793 5.86111 19.2769 5.8475 19.274 5.83397C18.9582 4.32899 17.6312 3.25 16.092 3.25H8.012ZM18.2927 9.25C18.2774 9.20635 18.2658 9.16065 18.2586 9.11323L17.802 6.12352C17.6249 5.32218 16.9145 4.75 16.092 4.75H8.012C7.20719 4.75 6.50675 5.29932 6.31387 6.07861L5.80025 9.25H18.2927ZM2.75 13C2.75 11.7572 3.75721 10.75 5 10.75H19C20.2428 10.75 21.25 11.7572 21.25 13V18.75C21.25 19.0258 21.0258 19.25 20.75 19.25H18.5C18.0862 19.25 17.75 18.9138 17.75 18.5V17.5C17.75 17.0858 17.4142 16.75 17 16.75H7C6.58579 16.75 6.25 17.0858 6.25 17.5V18.5C6.25 18.9138 5.91379 19.25 5.5 19.25H3.25C2.97421 19.25 2.75 19.0258 2.75 18.75V13Z\"/></svg>" },
   { n:"Monte sua Viagem", breve:true, svg:"<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M7.25002 4.00006C7.25002 2.48085 8.4808 1.25006 10 1.25006H14C15.5192 1.25006 16.75 2.48085 16.75 4.00006V6.25006H17C18.5192 6.25006 19.75 7.48085 19.75 9.00006V19.0001C19.75 20.5193 18.5192 21.7501 17 21.7501H16.75V22.0001C16.75 22.4143 16.4142 22.7501 16 22.7501C15.5858 22.7501 15.25 22.4143 15.25 22.0001V21.7501H8.75002V22.0001C8.75002 22.4143 8.41423 22.7501 8.00002 22.7501C7.5858 22.7501 7.25002 22.4143 7.25002 22.0001V21.7501H7.00002C5.4808 21.7501 4.25002 20.5193 4.25002 19.0001V9.00006C4.25002 7.48085 5.4808 6.25006 7.00002 6.25006H7.25002V4.00006ZM15.25 4.00006C15.25 3.30927 14.6908 2.75006 14 2.75006H10C9.30923 2.75006 8.75002 3.30927 8.75002 4.00006V6.25006H15.25V4.00006ZM16 7.75006H8.00002H7.00002C6.30923 7.75006 5.75002 8.30927 5.75002 9.00006V19.0001C5.75002 19.6908 6.30923 20.2501 7.00002 20.2501H8.00002H16H17C17.6908 20.2501 18.25 19.6908 18.25 19.0001V9.00006C18.25 8.30927 17.6908 7.75006 17 7.75006H16ZM10 9.25006H14C14.4142 9.25006 14.75 9.58585 14.75 10.0001C14.75 10.4143 14.4142 10.7501 14 10.7501H10C9.5858 10.7501 9.25002 10.4143 9.25002 10.0001C9.25002 9.58585 9.5858 9.25006 10 9.25006ZM12.75 13.0001C12.75 12.5858 12.4142 12.2501 12 12.2501C11.5858 12.2501 11.25 12.5858 11.25 13.0001V18.0001C11.25 18.4143 11.5858 18.7501 12 18.7501C12.4142 18.7501 12.75 18.4143 12.75 18.0001V13.0001ZM8.00002 12.2501C7.5858 12.2501 7.25002 12.5858 7.25002 13.0001V18.0001C7.25002 18.4143 7.5858 18.7501 8.00002 18.7501C8.41423 18.7501 8.75002 18.4143 8.75002 18.0001V13.0001C8.75002 12.5858 8.41423 12.2501 8.00002 12.2501ZM16.75 13.0001C16.75 12.5858 16.4142 12.2501 16 12.2501C15.5858 12.2501 15.25 12.5858 15.25 13.0001V18.0001C15.25 18.4143 15.5858 18.7501 16 18.7501C16.4142 18.7501 16.75 18.4143 16.75 18.0001V13.0001Z\"/></svg>" }
 ];
-function iconeCategoria(svg, cor){
+function iconeDoMotor(svg, cor){
   /* o ícone vive embutido no HTML do protótipo e por isso não declara xmlns;
      como imagem solta, sem ele o navegador recusa o SVG */
   var pronto = svg.replace(/currentColor/g, cor);
@@ -633,7 +635,7 @@ function quebra(g, txt, larg){
 }
 
 /* ---- a tela do portal, desenhada do zero ---- */
-function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones){
+function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones, icAjuda, icZap){
   var t = derivar(cfg.cores.brand, cfg.cores.texto);
   var corTexto = t.texto;
   var k = w / 368;                       /* a tela real tem 368 de largura */
@@ -727,12 +729,17 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones){
   }
 
   /* foto com a chamada */
-  var yFoto = yCat + hCat, hRodape = 86*k;
+  var yFoto = yCat + hCat, hRodape = 239*k;
   var hFoto = (y + h) - yFoto - hRodape;
   if(hero){
+    /* a foto cobre a largura e sobra em altura: sem recorte ela transborda
+       para cima e come a faixa de categorias */
+    g.save();
+    g.beginPath(); g.rect(x, yFoto, w, hFoto); g.clip();
     var escala = Math.max(w / hero.width, hFoto / hero.height);
     var lw2 = hero.width*escala, lh2 = hero.height*escala;
     g.drawImage(hero, x + (w-lw2)/2, yFoto + (hFoto-lh2)/2, lw2, lh2);
+    g.restore();
   } else {
     g.fillStyle = '#DDE3EA'; g.fillRect(x, yFoto, w, hFoto);
   }
@@ -756,25 +763,46 @@ function telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones){
   g.fillStyle = cfg.cores.brand;
   caminhoArredondado(g, x + 22*k, ty + 4*k, 6*k, 64*k, 4*k); g.fill();
 
-  /* rodapé */
+  /* rodapé: o bloco de ajuda e, abaixo da linha, o aviso legal.
+     As medidas vêm da tela real, lidas no navegador. */
   var yR = y + h - hRodape;
+  var acento = (cfg.cores && cfg.cores.accent) || '#FF9100';
   g.fillStyle = '#F5F7FA'; g.fillRect(x, yR, w, hRodape);
   g.strokeStyle = '#E9EDF2'; g.lineWidth = 1*k;
   g.beginPath(); g.moveTo(x, yR); g.lineTo(x+w, yR); g.stroke();
+
+  /* "Precisa de ajuda com sua viagem?" */
+  if(icAjuda) g.drawImage(icAjuda, x + 16*k, yR + 24.8*k, 30*k, 30*k);
+  g.fillStyle = corTexto;
+  g.font = '700 ' + (15*k) + 'px Inter, system-ui, sans-serif';
+  g.fillText('Precisa de ajuda', x + 58*k, yR + 30.4*k);
+  g.fillText('com sua viagem?', x + 58*k, yR + 49.1*k);
+
+  /* botão "Fale com a nossa equipe", vazado na cor de destaque */
+  g.font = '600 ' + (14.5*k) + 'px Inter, system-ui, sans-serif';
+  var largBotao = 42*k + g.measureText('Fale com a nossa equipe').width + 16*k;
+  g.strokeStyle = acento; g.lineWidth = 1*k;
+  caminhoArredondado(g, x + 16*k, yR + 71.5*k, largBotao, 38*k, 19*k); g.stroke();
+  if(icZap) g.drawImage(icZap, x + 27*k, yR + 80.5*k, 20*k, 20*k);
+  g.fillStyle = acento;
+  g.fillText('Fale com a nossa equipe', x + 58*k, yR + 90.5*k);
+
+  /* linha e aviso legal */
+  g.strokeStyle = '#E9EDF2'; g.lineWidth = 1*k;
+  g.beginPath(); g.moveTo(x + 16*k, yR + 127.5*k); g.lineTo(x + w - 16*k, yR + 127.5*k); g.stroke();
   g.fillStyle = '#8B95A2';
   g.font = '400 ' + (10.5*k) + 'px Inter, system-ui, sans-serif';
-  g.fillText('©RDC Viagens', x + 16*k, yR + 20*k);
-  g.fillText('Todos os direitos reservados.', x + 16*k, yR + 34*k);
+  g.fillText('©RDC Viagens', x + 16*k, yR + 154*k);
+  g.fillText('Todos os direitos reservados.', x + 16*k, yR + 169.8*k);
   g.fillStyle = '#626C78';
-  g.font = '400 ' + (10.5*k) + 'px Inter, system-ui, sans-serif';
-  g.fillText('Política de Privacidade', x + 16*k, yR + 58*k);
+  g.fillText('Política de Privacidade', x + 16*k, yR + 198*k);
   g.textAlign = 'right';
   g.fillStyle = '#8B95A2';
-  g.fillText('Tecnologia e operação', x + w - 16*k, yR + 20*k);
-  g.fillText('turística por', x + w - 16*k, yR + 34*k);
+  g.fillText('Tecnologia e operação', x + w - 16*k, yR + 154*k);
+  g.fillText('turística por', x + w - 16*k, yR + 169.2*k);
   if(rdc){
-    var rh = 26*k, rw = rdc.width * (rh/rdc.height);
-    g.drawImage(rdc, x + w - 16*k - rw, yR + 42*k, rw, rh);
+    var rh = 30*k, rw = rdc.width * (rh/rdc.height);
+    g.drawImage(rdc, x + w - 16*k - rw, yR + 181.9*k, rw, rh);
   }
   g.textAlign = 'left';
   g.restore();
@@ -874,10 +902,13 @@ function montaMockup(cfg, escala, feito){
     comApp ? carregaImagem(cfg.appProprio.imagem) : Promise.resolve(null),
     carregaImagem(MOCK_STATUS),
     Promise.all(MOCK_CATS.map(function(c){
-      return carregaImagem(iconeCategoria(c.svg, inkMock));
-    }))
+      return carregaImagem(iconeDoMotor(c.svg, inkMock));
+    })),
+    carregaImagem(iconeDoMotor(MOCK_IC_AJUDA, tonsMock.texto)),
+    carregaImagem(iconeDoMotor(MOCK_IC_ZAP, (cfg.cores && cfg.cores.accent) || '#FF9100'))
   ]).then(function(r){
     var logo = r[0], hero = r[1], rdc = r[2], app = r[3], sys = r[4], icones = r[5];
+    var icAjuda = r[6], icZap = r[7];
     var c = document.createElement('canvas');
     var g = c.getContext('2d');
     var larguraFrente = 300 * escala;
@@ -903,7 +934,7 @@ function montaMockup(cfg, escala, feito){
       /* primeiro o de trás: o portal padrão */
       inclinado(g, xFundo, yFundo, cheiaFundo, alturaFundo, angFundo, function(){
         aparelho(g, xFundo, yFundo, larguraFundo, function(x,y,w,h){
-          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones);
+          telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones, icAjuda, icZap);
         });
       });
       /* por cima, a home do app do cliente */
@@ -917,7 +948,7 @@ function montaMockup(cfg, escala, feito){
       c.width  = Math.round(margem*2 + larguraFrente*1.07);
       c.height = Math.round(margem*2 + altura);
       aparelho(g, margem, margem, larguraFrente, function(x,y,w,h){
-        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones);
+        telaPortal(g, x, y, w, h, cfg, logo, hero, rdc, sys, icones, icAjuda, icZap);
       });
     }
     feito(c, comApp && !!app);
